@@ -1,0 +1,98 @@
+@import 'tailwindcss';
+
+/* Identidade "Ternura": papel creme de caderno, tinta ameixa e um só destaque rosa.
+   Entradas em verde-folha, saídas em terracota. */
+@theme {
+  --color-fundo: #faf5ef;
+  --color-sup: #ffffff;
+  --color-sup-2: #f5ede4;
+  --color-sup-3: #ebe0d4;
+  --color-linha: #ecdfd2;
+  --color-txt: #2d2026;
+  --color-txt-2: #6f5d64;
+  --color-txt-3: #a4949a;
+  --color-rosa: #c2456a;
+  --color-rosa-forte: #a8355a;
+  --color-rosa-fundo: #fbe4ea;
+  --color-ent: #3c8a5c;
+  --color-ent-fundo: #e2f1e6;
+  --color-sai: #c4553c;
+  --color-sai-fundo: #fae5de;
+  --color-alerta: #b97b12;
+  --color-alerta-fundo: #fbefd6;
+
+  --font-titulo: 'Fraunces Variable', ui-serif, Georgia, serif;
+  --font-sans: 'Figtree Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --ease-mola: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--color-fundo);
+    color: var(--color-txt);
+    font-family: var(--font-sans);
+    overscroll-behavior: none;
+  }
+  button { cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+  /* com algo aberto por cima, a tela de trás não rola junto */
+  body:has(.trava-rolagem) { overflow: hidden; }
+  :focus-visible { outline: 2px solid var(--color-rosa); outline-offset: 2px; border-radius: 8px; }
+  input, select, textarea { font-size: 16px; } /* abaixo disso o iPhone dá zoom */
+  input[type='date'], input[type='time'] { min-height: 44px; }
+}
+
+/* Títulos e números grandes: Fraunces macia (eixo SOFT) */
+@utility titulo {
+  font-family: var(--font-titulo);
+  font-variation-settings: 'SOFT' 100, 'WONK' 0, 'opsz' 48;
+  letter-spacing: -0.015em;
+}
+@utility num {
+  font-family: var(--font-titulo);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-variation-settings: 'SOFT' 100, 'opsz' 36;
+  letter-spacing: -0.02em;
+}
+
+/* Campo de formulário padrão */
+@utility campo {
+  height: 48px;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid var(--color-linha);
+  background: var(--color-sup);
+  padding: 0 16px;
+  font-size: 16px;
+  color: var(--color-txt);
+  &::placeholder { color: var(--color-txt-3); }
+  &:focus { outline: none; border-color: var(--color-rosa); box-shadow: 0 0 0 3px var(--color-rosa-fundo); }
+}
+
+/* Cartão branco sobre o papel */
+@utility cartao {
+  background: var(--color-sup);
+  border: 1px solid var(--color-linha);
+  border-radius: 24px;
+  box-shadow: 0 1px 0 rgba(80, 40, 50, 0.03), 0 12px 32px -20px rgba(80, 40, 50, 0.18);
+}
+
+/* Linhas de caderno ao fundo */
+@utility pautado {
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(194, 69, 106, 0.07) 31px 32px);
+}
+
+@utility pb-seguro { padding-bottom: env(safe-area-inset-bottom); }
+@utility pt-seguro { padding-top: env(safe-area-inset-top); }
+
+@keyframes tremer {
+  0%, 100% { transform: translateX(0) }
+  25% { transform: translateX(-6px) }
+  75% { transform: translateX(6px) }
+}
+@utility tremer { animation: tremer 0.4s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

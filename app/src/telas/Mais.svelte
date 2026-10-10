@@ -1,0 +1,213 @@
+<script>
+  import { Truck, Tags, BellRing, Download, Smartphone, Info, ChevronRight, ChevronUp, ChevronDown, Plus, MessageCircle, Pencil, Trash2, FileSpreadsheet, LogOut, RotateCcw, Send } from '@lucide/svelte'
+  import Folha from '../componentes/Folha.svelte'
+  import Campo from '../componentes/Campo.svelte'
+  import Escolha from '../componentes/Escolha.svelte'
+  import { S, demo, abrirFornecedor, salvarCategoria, excluirCategoria, moverCategoria, usoCategoria, categoriasDoTipo, contasAbertas, avisar, tratarErro, confirmar, sair, VERSAO } from '../lib/estado.svelte.js'
+  import { Api, codigoSalvo } from '../lib/api.js'
+  import { baixarCSV } from '../lib/exportar.js'
+  import { telefoneWhats, fmt } from '../lib/formato.js'
+
+  let painel = $state(null) // 'fornecedores' | 'categorias' | 'telegram' | 'exportar' | 'instalar'
+  let cat = $state(null) // categoria sendo editada { id, nome, tipo }
+  let apagando = $state(null) // { cat, destino }
+  let info = $state(null)
+  let testando = $state(false)
+  let tipoCat = $state('entrada')
+
+  async function abrirTelegram() {
+    painel = 'telegram'
+    try { info = await Api.info() } catch (e) { tratarErro(e) }
+  }
+  async function testar() {
+    if (testando) return
+    testando = true
+    try { const r = await Api.testarTelegram(); avisar(`Mensagem enviada para ${r?.enviadas ?? 'o'} Telegram`) }
+    catch (e) { tratarErro(e) } finally { testando = false }
+  }
+  async function salvarCat() {
+    const nome = cat.nome.trim()
+    if (!nome) return avisar('Dê um nome para a categoria.', 'erro')
+    if (S.categorias.some(c => c.id !== cat.id && c.tipo === cat.tipo && c.nome.toLowerCase() === nome.toLowerCase())) return avisar('Já existe uma categoria com esse nome.', 'erro')
+    try { await salvarCategoria({ ...cat, nome }); avisar('Categoria salva'); cat = null } catch (e) { tratarErro(e) }
+  }
+  async function pedirExcluir(c) {
+    const uso = usoCategoria(c.id)
+    if (!uso) {
+      if (!(await confirmar(`Apagar a categoria “${c.nome}”?`, { ok: 'Apagar', perigo: true }))) return
+      try { await excluirCategoria(c.id); avisar('Categoria apagada') } catch (e) { tratarErro(e) }
+      return
+    }
+    apagando = { cat: c, destino: categoriasDoTipo(c.tipo).find(x => x.id !== c.id)?.id || '', uso }
+  }
+  async function confirmarExcluir() {
+    try { await excluirCategoria(apagando.cat.id, apagando.destino); avisar('Categoria apagada'); apagando = null } catch (e) { tratarErro(e) }
+  }
+  function exportar(qual) {
+    const ano = new Date().getFullYear()
+    const lista = qual === 'tudo' ? S.lancamentos : S.lancamentos.filter(l => l.data.startsWith(String(qual)))
+    if (!lista.length) return avisar('Nada para exportar nesse período.', 'erro')
+    baixarCSV(lista, `ternura-flores-${qual === 'tudo' ? 'tudo' : qual}.csv`)
+  }
+  async function zerarDemo() {
+    if (!(await confirmar('Voltar os dados de exemplo para o começo? O que você testou aqui some.', { ok: 'Voltar ao começo' }))) return
+    Api.apagarTudo(); location.reload()
+  }
+  async function esquecer() {
+    if (!(await confirmar('Sair deste aparelho? Para entrar de novo vai precisar do código de acesso.', { ok: 'Sair', perigo: true }))) return
+    sair()
+  }
+  const anos = $derived([...new Set(S.lancamentos.map(l => l.data.slice(0, 4)))].sort().reverse())
+  const contasDe = id => contasAbertas().filter(c => c.fornecedor === id)
+
+  const ITENS = [
+    ['fornecedores', Truck, 'Fornecedores', () => `${S.fornecedores.length} cadastrado${S.fornecedores.length === 1 ? '' : 's'}`],
+    ['categorias', Tags, 'Categorias', () => 'Tipos de entrada e saída'],
+    ['telegram', BellRing, 'Lembretes no Telegram', () => 'Avisos de contas e encomendas'],
+    ['exportar', Download, 'Exportar para o Excel', () => 'Para o contador ou para guardar'],
+    ['instalar', Smartphone, 'Instalar no celular', () => 'Ícone na tela de início'],
+  ]
+</script>
+
+<h1 class="titulo mb-5 text-[30px] font-semibold lg:text-[34px]">Mais</h1>
+
+{#if demo}
+  <div class="mb-4 rounded-[24px] border border-alerta/30 bg-alerta-fundo p-4">
+    <p class="text-[15px] font-semibold text-alerta">Modo demonstração</p>
+    <p class="mt-1 text-[13.5px] leading-relaxed text-txt-2">Os dados são de exemplo e ficam só neste navegador. Pode testar à vontade: criar, editar e apagar.</p>
+    <button class="mt-3 flex h-10 items-center gap-2 rounded-full bg-white/70 px-4 text-[14px] font-medium" onclick={zerarDemo}><RotateCcw size={15} /> Voltar os dados de exemplo ao começo</button>
+  </div>
+{/if}
+
+<div class="cartao divide-y divide-linha/70 overflow-hidden lg:max-w-2xl">
+  {#each ITENS as [id, Icone, nome, sub]}
+    <button class="flex min-h-16 w-full items-center gap-3.5 px-4 py-3 text-left hover:bg-sup-2/60" onclick={() => (id === 'telegram' ? abrirTelegram() : (painel = id))}>
+      <span class="grid size-10 place-items-center rounded-full bg-rosa-fundo text-rosa"><Icone size={19} /></span>
+      <span class="flex-1"><span class="block text-[15.5px] font-medium">{nome}</span><span class="text-[13px] text-txt-3">{sub()}</span></span>
+      <ChevronRight size={18} class="text-txt-3" />
+    </button>
+  {/each}
+</div>
+
+<div class="mt-6 flex flex-col items-center gap-3 text-center lg:max-w-2xl">
+  {#if !demo}
+    <button class="flex h-11 items-center gap-2 rounded-full px-4 text-[14px] text-txt-3 hover:bg-sup-2" onclick={esquecer}><LogOut size={16} /> Sair deste aparelho</button>
+  {/if}
+  <p class="text-[12px] text-txt-3">Ternura Flores · Caixa · versão {VERSAO}</p>
+</div>
+
+{#if painel === 'fornecedores'}
+  <Folha titulo="Fornecedores" aoFechar={() => (painel = null)} largo>
+    <button class="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rosa text-[15px] font-semibold text-white" onclick={() => abrirFornecedor()}><Plus size={18} /> Novo fornecedor</button>
+    {#if !S.fornecedores.length}<p class="py-6 text-center text-[14px] text-txt-3">Nenhum fornecedor ainda.</p>{/if}
+    <div class="space-y-2.5">
+      {#each [...S.fornecedores].sort((a, b) => a.nome.localeCompare(b.nome)) as f (f.id)}
+        {@const abertas = contasDe(f.id)}
+        <div class="rounded-[20px] border border-linha bg-sup p-4">
+          <div class="flex items-start gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-[15.5px] font-semibold">{f.nome}</p>
+              {#if f.produtos}<p class="text-[13.5px] text-txt-2">{f.produtos}</p>{/if}
+              {#if f.obs}<p class="mt-0.5 text-[12.5px] text-txt-3">{f.obs}</p>{/if}
+              {#if f.pix}<p class="mt-1 text-[12.5px] text-txt-3">Pix: <span class="select-all">{f.pix}</span></p>{/if}
+              {#if abertas.length}<p class="mt-1.5 text-[12.5px] font-medium text-alerta">{abertas.length} conta{abertas.length > 1 ? 's' : ''} em aberto · {fmt(abertas.reduce((a, c) => a + c.valor, 0))}</p>{/if}
+            </div>
+            <div class="flex shrink-0 gap-1">
+              {#if f.telefone}<a class="grid size-10 place-items-center rounded-full text-txt-2 hover:bg-sup-2" href="https://wa.me/{telefoneWhats(f.telefone)}" target="_blank" rel="noopener" aria-label="WhatsApp"><MessageCircle size={18} /></a>{/if}
+              <button class="grid size-10 place-items-center rounded-full text-txt-2 hover:bg-sup-2" aria-label="Editar" onclick={() => abrirFornecedor($state.snapshot(f))}><Pencil size={17} /></button>
+            </div>
+          </div>
+        </div>
+      {/each}
+    </div>
+  </Folha>
+{/if}
+
+{#if painel === 'categorias'}
+  <Folha titulo="Categorias" aoFechar={() => (painel = null)} largo>
+    <Escolha opcoes={[['entrada', 'Entradas'], ['saida', 'Saídas']]} bind:valor={tipoCat} />
+    <div class="mt-4 overflow-hidden rounded-[20px] border border-linha bg-sup">
+      {#each categoriasDoTipo(tipoCat) as c, i (c.id)}
+        <div class="flex items-center gap-2 py-1.5 pr-1.5 pl-4 not-last:border-b not-last:border-linha/70">
+          <span class="size-3 shrink-0 rounded-full" style="background:{c.cor}"></span>
+          <span class="flex-1 truncate text-[15px]">{c.nome}</span>
+          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === 0} aria-label="Subir" onclick={() => moverCategoria(c.id, -1).catch(tratarErro)}><ChevronUp size={17} /></button>
+          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === categoriasDoTipo(tipoCat).length - 1} aria-label="Descer" onclick={() => moverCategoria(c.id, 1).catch(tratarErro)}><ChevronDown size={17} /></button>
+          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2" aria-label="Renomear" onclick={() => (cat = { ...$state.snapshot(c) })}><Pencil size={16} /></button>
+          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sai-fundo hover:text-sai" aria-label="Apagar" onclick={() => pedirExcluir(c)}><Trash2 size={16} /></button>
+        </div>
+      {/each}
+    </div>
+    <button class="mt-3 h-12 w-full rounded-2xl border border-dashed border-sup-3 text-[15px] text-txt-2" onclick={() => (cat = { id: '', nome: '', tipo: tipoCat })}>+ Nova categoria de {tipoCat === 'entrada' ? 'entrada' : 'saída'}</button>
+    <p class="mt-3 text-[12.5px] text-txt-3">A ordem aqui é a ordem em que aparecem na hora de lançar. As 8 primeiras de cada tipo ganham cor própria.</p>
+  </Folha>
+{/if}
+
+{#if cat}
+  <Folha titulo={cat.id ? 'Renomear categoria' : 'Nova categoria'} aoFechar={() => (cat = null)}>
+    <Campo rotulo="Nome"><input class="campo" bind:value={cat.nome} maxlength="40" /></Campo>
+    <button class="mt-5 h-12 w-full rounded-2xl bg-rosa text-[15px] font-semibold text-white" onclick={salvarCat}>Salvar</button>
+  </Folha>
+{/if}
+
+{#if apagando}
+  <Folha titulo="Apagar “{apagando.cat.nome}”" aoFechar={() => (apagando = null)}>
+    <p class="text-[14.5px] leading-relaxed text-txt-2">Ela é usada em {apagando.uso} lançamento(s) ou conta(s). Para onde eles vão?</p>
+    <select class="campo mt-3 px-3" bind:value={apagando.destino}>
+      {#each categoriasDoTipo(apagando.cat.tipo).filter(x => x.id !== apagando.cat.id) as c}<option value={c.id}>{c.nome}</option>{/each}
+    </select>
+    <button class="mt-5 h-12 w-full rounded-2xl bg-sai text-[15px] font-semibold text-white disabled:opacity-50" disabled={!apagando.destino} onclick={confirmarExcluir}>Mover e apagar</button>
+  </Folha>
+{/if}
+
+{#if painel === 'telegram'}
+  <Folha titulo="Lembretes no Telegram" aoFechar={() => (painel = null)} largo>
+    <p class="text-[14.5px] leading-relaxed text-txt-2">Todo dia de manhã chega uma mensagem no Telegram com as contas que vencem (e as atrasadas) e as encomendas do dia. Funciona mesmo com o app fechado.</p>
+    {#if demo}
+      <p class="mt-4 rounded-2xl bg-alerta-fundo p-4 text-[13.5px] text-alerta">No modo demonstração o Telegram fica desligado. Ele funciona depois de configurar a planilha (veja o guia no GitHub).</p>
+    {:else if !info}
+      <div class="grid h-24 place-items-center"><span class="size-7 animate-spin rounded-full border-2 border-rosa/30 border-t-rosa"></span></div>
+    {:else if info.telegram?.configurado}
+      {#if info.telegram.bot}
+        <a class="mt-4 flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#2a9fd8] text-[15px] font-semibold text-white" href="https://t.me/{info.telegram.bot}?start={encodeURIComponent(codigoSalvo())}" target="_blank" rel="noopener"><Send size={17} /> Conectar o Telegram deste celular</a>
+        <p class="mt-2 text-[12.5px] leading-relaxed text-txt-3">Abre o bot @{info.telegram.bot}. Toque em “Começar” e volte aqui para mandar o teste. Cada pessoa faz isso no próprio celular.</p>
+      {/if}
+      <div class="mt-4 rounded-2xl bg-ent-fundo p-4 text-[14px] text-ent">
+        <p class="font-semibold">Bot ligado · {info.telegram.pessoas} pessoa{info.telegram.pessoas === 1 ? '' : 's'} recebendo</p>
+      </div>
+      <button class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-txt text-[15px] font-semibold text-fundo disabled:opacity-60" disabled={testando} onclick={testar}><Send size={17} />{testando ? 'Enviando…' : 'Mandar mensagem de teste'}</button>
+    {:else}
+      <p class="mt-4 rounded-2xl bg-alerta-fundo p-4 text-[13.5px] leading-relaxed text-alerta">Ainda não configurado. Siga o passo “Telegram” do guia de instalação (arquivo CONFIGURAR.md no GitHub).</p>
+    {/if}
+    {#if info?.planilha}
+      <a class="mt-5 flex h-12 items-center justify-center gap-2 rounded-2xl border border-linha bg-sup text-[15px] font-medium text-txt-2" href={info.planilha} target="_blank" rel="noopener"><FileSpreadsheet size={18} /> Abrir a planilha</a>
+    {/if}
+  </Folha>
+{/if}
+
+{#if painel === 'exportar'}
+  <Folha titulo="Exportar para o Excel" aoFechar={() => (painel = null)}>
+    <p class="mb-4 text-[14.5px] leading-relaxed text-txt-2">Baixa um arquivo .csv que abre no Excel. Todos os dados também ficam na planilha do Google.</p>
+    <div class="space-y-2">
+      {#each anos as a}
+        <button class="flex h-12 w-full items-center justify-between rounded-2xl border border-linha bg-sup px-4 text-[15px]" onclick={() => exportar(a)}>Lançamentos de {a} <Download size={17} class="text-txt-3" /></button>
+      {/each}
+      <button class="flex h-12 w-full items-center justify-between rounded-2xl border border-linha bg-sup px-4 text-[15px]" onclick={() => exportar('tudo')}>Tudo <Download size={17} class="text-txt-3" /></button>
+    </div>
+  </Folha>
+{/if}
+
+{#if painel === 'instalar'}
+  <Folha titulo="Instalar no celular" aoFechar={() => (painel = null)}>
+    <div class="space-y-4 text-[14.5px] leading-relaxed text-txt-2">
+      <div class="rounded-2xl border border-linha bg-sup p-4">
+        <p class="mb-1 font-semibold text-txt">iPhone (Safari)</p>
+        <p>Toque no botão de compartilhar (quadrado com a seta para cima) › “Adicionar à Tela de Início” › Adicionar.</p>
+      </div>
+      <div class="rounded-2xl border border-linha bg-sup p-4">
+        <p class="mb-1 font-semibold text-txt">Android (Chrome)</p>
+        <p>Toque nos três pontinhos no canto de cima › “Instalar app” ou “Adicionar à tela inicial”.</p>
+      </div>
+    </div>
+  </Folha>
+{/if}
