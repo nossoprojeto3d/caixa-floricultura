@@ -39,6 +39,7 @@ Tabelas (abas): `lancamentos`, `categorias`, `encomendas`, `contas`, `fornecedor
 - `lancamentos.origem`: `manual`, `caderno`, `conta` (pagamento de conta, `ref` = id da conta) ou `encomenda` (`ref` = id da encomenda).
 - `fechamentos`: um por dia fechado (`id` = data). Os totais gravados são só uma referência para a planilha; o app sempre recalcula pelos lançamentos.
 - Excluir um lançamento que veio de conta reabre a conta.
+- **Fechar o dia não duplica:** na revisão do caderno, linha com o mesmo tipo e valor de um lançamento já existente no dia é marcada "Já lançado" e não é salva (casamento um para um; ela pode tocar em "Lançar mesmo assim"). Regra em `repetidas` no `Caderno.svelte`.
 
 ## Publicar
 1. Suba `VERSAO` em `app/src/lib/estado.svelte.js` e `CACHE` em `app/public/sw.js`.

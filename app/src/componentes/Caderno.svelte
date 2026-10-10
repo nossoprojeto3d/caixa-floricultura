@@ -1,6 +1,6 @@
 <script>
   // Fechar o dia: foto do caderno → IA lê → ela confere/corrige → salva tudo no caixa
-  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles, ListChecks, ChevronRight } from '@lucide/svelte'
+  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles, ListChecks, ChevronRight, CircleCheck } from '@lucide/svelte'
   import { fade, fly, slide } from 'svelte/transition'
   import Dinheiro from './Dinheiro.svelte'
   import { S, categoriasDoTipo, lancsDoDia, fechamento, fecharDia, avisar, tratarErro, confirmar, nomeCat, demo } from '../lib/estado.svelte.js'
@@ -24,7 +24,7 @@
   let enviando = $state(false)
   let inputCamera = $state(), inputGaleria = $state()
 
-  const linha = (x = {}) => ({ chave: novoId(), tipo: 'entrada', valorTxt: '', descricao: '', categoria: categoriasDoTipo(x.tipo || 'entrada')[0]?.id || '', forma: '', duvida: false, ...x })
+  const linha = (x = {}) => ({ chave: novoId(), tipo: 'entrada', valorTxt: '', descricao: '', categoria: categoriasDoTipo(x.tipo || 'entrada')[0]?.id || '', forma: '', duvida: false, forcar: false, ...x })
 
   async function escolheuFoto(e) {
     const arq = e.currentTarget.files?.[0]
@@ -65,7 +65,21 @@
     if (it.tipo === 'entrada' && it.forma === 'Boleto') it.forma = ''
   }
 
-  const validos = $derived(itens.filter(i => lerValor(i.valorTxt) > 0))
+  // Linha que já está lançada no sistema neste dia (mesmo tipo e mesmo valor) não entra de novo.
+  // Cada lançamento existente casa com uma linha só: duas vendas de R$ 50 no caderno e uma no sistema = uma repetida.
+  const repetidas = $derived.by(() => {
+    const livres = ja.map(l => ({ l, usado: false }))
+    const m = new Map()
+    for (const it of itens) {
+      const v = cent(lerValor(it.valorTxt))
+      if (!v) continue
+      const x = livres.find(z => !z.usado && z.l.tipo === it.tipo && cent(z.l.valor) === v)
+      if (x) { x.usado = true; m.set(it.chave, x.l) }
+    }
+    return m
+  })
+  const ignoradas = $derived(itens.filter(i => repetidas.has(i.chave) && !i.forcar).length)
+  const validos = $derived(itens.filter(i => lerValor(i.valorTxt) > 0 && (!repetidas.has(i.chave) || i.forcar)))
   const tot = $derived.by(() => {
     let e = 0, s = 0
     const formas = {}
@@ -147,6 +161,9 @@
       </div>
 
     {:else}
+      {#if ignoradas}
+        <div class="mb-3 flex gap-2.5 rounded-2xl bg-ent-fundo p-3.5 text-[13.5px] leading-snug text-ent" transition:slide><CircleCheck size={18} class="mt-px shrink-0" />{ignoradas === 1 ? '1 linha já estava lançada no sistema e não vai ser repetida.' : `${ignoradas} linhas já estavam lançadas no sistema e não vão ser repetidas.`}</div>
+      {/if}
       {#if aviso}
         <div class="mb-3 flex gap-2.5 rounded-2xl bg-alerta-fundo p-3.5 text-[13.5px] leading-snug text-alerta" transition:slide><CircleAlert size={18} class="mt-px shrink-0" />{aviso}</div>
       {/if}
@@ -166,7 +183,15 @@
 
       <div class="space-y-2.5">
         {#each itens as it, i (it.chave)}
-          <div class="rounded-[20px] border bg-sup p-3 {it.duvida ? 'border-alerta/50 bg-alerta-fundo/40' : 'border-linha'}" transition:slide={{ duration: 200 }}>
+          {@const igual = repetidas.get(it.chave)}
+          <div class="rounded-[20px] border bg-sup p-3 {igual && !it.forcar ? 'border-ent/30' : it.duvida ? 'border-alerta/50 bg-alerta-fundo/40' : 'border-linha'}" transition:slide={{ duration: 200 }}>
+            {#if igual}
+              <div class="-mx-3 -mt-3 mb-3 flex items-center gap-2 rounded-t-[20px] px-3 py-2 text-[12.5px] {it.forcar ? 'bg-alerta-fundo text-alerta' : 'bg-ent-fundo text-ent'}">
+                <span class="min-w-0 flex-1 truncate">{it.forcar ? 'Vai lançar de novo' : `Já lançado: ${igual.descricao || nomeCat(igual.categoria)}`}</span>
+                <button class="shrink-0 rounded-full bg-white/70 px-3 py-1 font-semibold" onclick={() => (it.forcar = !it.forcar)}>{it.forcar ? 'Não repetir' : 'Lançar mesmo assim'}</button>
+              </div>
+            {/if}
+            <div class={igual && !it.forcar ? 'opacity-45' : ''}>
             <div class="flex items-center gap-2">
               <button class="grid size-11 shrink-0 place-items-center rounded-xl {it.tipo === 'entrada' ? 'bg-ent-fundo text-ent' : 'bg-sai-fundo text-sai'}" aria-label={it.tipo === 'entrada' ? 'Entrada (toque para virar saída)' : 'Saída (toque para virar entrada)'} onclick={() => trocarTipo(it)}>
                 {#if it.tipo === 'entrada'}<Plus size={20} strokeWidth={2.4} />{:else}<Minus size={20} strokeWidth={2.4} />{/if}
@@ -186,6 +211,7 @@
                 <option value="">Forma…</option>
                 {#each FORMAS.filter(x => it.tipo === 'saida' || x !== 'Boleto') as p}<option value={p}>{p}</option>{/each}
               </select>
+            </div>
             </div>
           </div>
         {/each}
