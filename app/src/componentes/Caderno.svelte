@@ -24,7 +24,7 @@
   let enviando = $state(false)
   let inputCamera = $state(), inputGaleria = $state()
 
-  const linha = (x = {}) => ({ chave: novoId(), tipo: 'entrada', valorTxt: '', descricao: '', categoria: categoriasDoTipo(x.tipo || 'entrada')[0]?.id || '', forma: '', duvida: false, forcar: false, ...x })
+  const linha = (x = {}) => ({ chave: novoId(), tipo: 'entrada', valorTxt: '', descricao: '', categoria: categoriasDoTipo(x.tipo || 'entrada')[0]?.id || '', forma: '', duvida: false, decisao: '', ...x })
 
   async function escolheuFoto(e) {
     const arq = e.currentTarget.files?.[0]
@@ -78,8 +78,9 @@
     }
     return m
   })
-  const ignoradas = $derived(itens.filter(i => repetidas.has(i.chave) && !i.forcar).length)
-  const validos = $derived(itens.filter(i => lerValor(i.valorTxt) > 0 && (!repetidas.has(i.chave) || i.forcar)))
+  // Linha parecida espera ela responder: 'mesmo' (não lança) ou 'diferente' (lança). Nada é decidido sozinho.
+  const pendentes = $derived(itens.filter(i => repetidas.has(i.chave) && !i.decisao))
+  const validos = $derived(itens.filter(i => lerValor(i.valorTxt) > 0 && !(repetidas.has(i.chave) && i.decisao !== 'diferente')))
   const tot = $derived.by(() => {
     let e = 0, s = 0
     const formas = {}
@@ -90,8 +91,15 @@
     return { e: e / 100, s: s / 100, formas: Object.entries(formas).sort((a, b) => b[1] - a[1]).map(([k, v]) => [k, v / 100]) }
   })
 
+  let tremerPendentes = $state(false)
   async function salvar() {
     if (enviando) return
+    if (etapa === 'revisar' && pendentes.length) {
+      avisar(pendentes.length === 1 ? 'Responda se a linha amarela já está lançada.' : `Responda as ${pendentes.length} linhas amarelas antes de salvar.`, 'erro')
+      document.querySelector('[data-pendente]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      tremerPendentes = true; setTimeout(() => (tremerPendentes = false), 600)
+      return
+    }
     const vazios = itens.filter(i => !lerValor(i.valorTxt) && (i.descricao || '').trim())
     if (vazios.length && !(await confirmar(`${vazios.length} linha(s) estão sem valor e não serão salvas. Continuar?`, { ok: 'Continuar' }))) return
     if (!validos.length && !ja.length && !(await confirmar('Nenhum lançamento neste dia. Fechar o dia mesmo assim (loja fechada, por exemplo)?', { ok: 'Fechar dia' }))) return
@@ -161,8 +169,8 @@
       </div>
 
     {:else}
-      {#if ignoradas}
-        <div class="mb-3 flex gap-2.5 rounded-2xl bg-ent-fundo p-3.5 text-[13.5px] leading-snug text-ent" transition:slide><CircleCheck size={18} class="mt-px shrink-0" />{ignoradas === 1 ? '1 linha já estava lançada no sistema e não vai ser repetida.' : `${ignoradas} linhas já estavam lançadas no sistema e não vão ser repetidas.`}</div>
+      {#if pendentes.length}
+        <div class="mb-3 flex gap-2.5 rounded-2xl bg-alerta-fundo p-3.5 text-[13.5px] leading-snug text-alerta" transition:slide><CircleAlert size={18} class="mt-px shrink-0" />{pendentes.length === 1 ? '1 linha é parecida com algo que já está lançado neste dia. Confira abaixo se é a mesma.' : `${pendentes.length} linhas são parecidas com o que já está lançado neste dia. Confira abaixo se são as mesmas.`}</div>
       {/if}
       {#if aviso}
         <div class="mb-3 flex gap-2.5 rounded-2xl bg-alerta-fundo p-3.5 text-[13.5px] leading-snug text-alerta" transition:slide><CircleAlert size={18} class="mt-px shrink-0" />{aviso}</div>
@@ -184,14 +192,25 @@
       <div class="space-y-2.5">
         {#each itens as it, i (it.chave)}
           {@const igual = repetidas.get(it.chave)}
-          <div class="rounded-[20px] border bg-sup p-3 {igual && !it.forcar ? 'border-ent/30' : it.duvida ? 'border-alerta/50 bg-alerta-fundo/40' : 'border-linha'}" transition:slide={{ duration: 200 }}>
+          <div data-pendente={igual && !it.decisao ? '' : undefined} class="rounded-[20px] border bg-sup p-3 {igual && !it.decisao ? 'border-alerta/60' : igual && it.decisao === 'mesmo' ? 'border-ent/30' : it.duvida ? 'border-alerta/50 bg-alerta-fundo/40' : 'border-linha'} {igual && !it.decisao && tremerPendentes ? 'tremer' : ''}" transition:slide={{ duration: 200 }}>
             {#if igual}
-              <div class="-mx-3 -mt-3 mb-3 flex items-center gap-2 rounded-t-[20px] px-3 py-2 text-[12.5px] {it.forcar ? 'bg-alerta-fundo text-alerta' : 'bg-ent-fundo text-ent'}">
-                <span class="min-w-0 flex-1 truncate">{it.forcar ? 'Vai lançar de novo' : `Já lançado: ${igual.descricao || nomeCat(igual.categoria)}`}</span>
-                <button class="shrink-0 rounded-full bg-white/70 px-3 py-1 font-semibold" onclick={() => (it.forcar = !it.forcar)}>{it.forcar ? 'Não repetir' : 'Lançar mesmo assim'}</button>
-              </div>
+              {#if !it.decisao}
+                <div class="-mx-3 -mt-3 mb-3 rounded-t-[20px] bg-alerta-fundo px-3.5 pt-3 pb-3 text-alerta">
+                  <p class="text-[14px] font-semibold">É o mesmo lançamento?</p>
+                  <p class="mt-0.5 text-[13px] text-txt-2">Já tem no sistema: <b>{igual.descricao || nomeCat(igual.categoria)}</b> · {fmt(igual.valor)}{igual.forma ? ` · ${igual.forma}` : ''}</p>
+                  <div class="mt-2.5 grid grid-cols-2 gap-2">
+                    <button class="h-10 rounded-xl bg-white text-[13.5px] font-semibold text-txt" onclick={() => (it.decisao = 'mesmo')}>Sim, já está lançado</button>
+                    <button class="h-10 rounded-xl bg-white text-[13.5px] font-semibold text-txt" onclick={() => (it.decisao = 'diferente')}>Não, lançar também</button>
+                  </div>
+                </div>
+              {:else}
+                <div class="-mx-3 -mt-3 mb-3 flex items-center gap-2 rounded-t-[20px] px-3 py-2 text-[12.5px] {it.decisao === 'mesmo' ? 'bg-ent-fundo text-ent' : 'bg-sup-2 text-txt-2'}">
+                  <span class="min-w-0 flex-1 truncate">{it.decisao === 'mesmo' ? `Já lançado (${igual.descricao || nomeCat(igual.categoria)}) · não vai repetir` : 'Diferente do que já tem · vai ser lançado'}</span>
+                  <button class="shrink-0 rounded-full bg-white/70 px-3 py-1 font-semibold" onclick={() => (it.decisao = '')}>Mudar</button>
+                </div>
+              {/if}
             {/if}
-            <div class={igual && !it.forcar ? 'opacity-45' : ''}>
+            <div class={igual && it.decisao === 'mesmo' ? 'opacity-45' : ''}>
             <div class="flex items-center gap-2">
               <button class="grid size-11 shrink-0 place-items-center rounded-xl {it.tipo === 'entrada' ? 'bg-ent-fundo text-ent' : 'bg-sai-fundo text-sai'}" aria-label={it.tipo === 'entrada' ? 'Entrada (toque para virar saída)' : 'Saída (toque para virar entrada)'} onclick={() => trocarTipo(it)}>
                 {#if it.tipo === 'entrada'}<Plus size={20} strokeWidth={2.4} />{:else}<Minus size={20} strokeWidth={2.4} />{/if}
