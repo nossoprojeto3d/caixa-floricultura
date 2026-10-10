@@ -1,6 +1,6 @@
 <script>
   // Fechar o dia: foto do caderno → IA lê → ela confere/corrige → salva tudo no caixa
-  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles } from '@lucide/svelte'
+  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles, ListChecks, ChevronRight } from '@lucide/svelte'
   import { fade, fly, slide } from 'svelte/transition'
   import Dinheiro from './Dinheiro.svelte'
   import { S, categoriasDoTipo, lancsDoDia, fechamento, fecharDia, avisar, tratarErro, confirmar, nomeCat, demo } from '../lib/estado.svelte.js'
@@ -89,6 +89,14 @@
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }
 
+  // Opções da primeira tela; com algo já lançado no dia, fechar com isso vem primeiro
+  const opcoes = $derived([
+    ...(ja.length ? [{ id: 'lancados', icone: ListChecks, nome: 'Fechar com os itens já lançados', sub: `${ja.length} lançamento${ja.length > 1 ? 's' : ''} · entrou ${fmt(tot.e)} · saiu ${fmt(tot.s)}`, acao: salvar }] : []),
+    { id: 'foto', icone: Camera, nome: 'Tirar foto do caderno', sub: 'Eu leio e você só confere', acao: () => inputCamera.click() },
+    { id: 'galeria', icone: Imagem, nome: 'Escolher da galeria', sub: 'Uma foto que já está no celular', acao: () => inputGaleria.click() },
+    { id: 'digitar', icone: Keyboard, nome: 'Digitar sem foto', sub: 'Lançar à mão agora', acao: semFoto },
+  ])
+
   async function fechar() {
     if (etapa === 'revisar' && validos.length && !(await confirmar('Sair sem salvar? O que foi digitado aqui se perde.', { ok: 'Sair', perigo: true }))) return
     S.caderno = null
@@ -111,28 +119,20 @@
 
   <div class="flex-1 overflow-y-auto overscroll-contain px-5 pb-6">
     {#if etapa === 'inicio'}
-      <div class="pautado mt-2 rounded-[28px] border border-linha bg-sup px-5 pt-8 pb-6 text-center" in:fade>
-        <div class="mx-auto grid size-16 place-items-center rounded-full bg-rosa-fundo text-rosa"><Camera size={30} strokeWidth={1.8} /></div>
-        <p class="titulo mt-4 text-[22px] font-semibold">Foto do caderninho</p>
-        <p class="mx-auto mt-1.5 max-w-[300px] text-[14.5px] leading-relaxed text-txt-2">Tire uma foto da página do dia, bem de cima e com luz. Eu leio e você só confere.</p>
-        <button class="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-rosa text-[16px] font-semibold text-white active:scale-[0.98]" onclick={() => inputCamera.click()}>
-          <Camera size={20} /> Tirar foto
-        </button>
-        <button class="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-linha bg-sup text-[15px] font-medium text-txt-2" onclick={() => inputGaleria.click()}>
-          <Imagem size={18} /> Escolher da galeria
-        </button>
-        <button class="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-medium text-txt-2" onclick={semFoto}>
-          <Keyboard size={18} /> Digitar sem foto
-        </button>
-      </div>
-      {#if ja.length}
-        <div class="mt-4 rounded-[24px] border border-linha bg-sup p-4 text-center">
-          <p class="text-[13.5px] text-txt-2">Já lançado neste dia: {ja.length} lançamento{ja.length > 1 ? 's' : ''} · entrou {fmt(tot.e)} · saiu {fmt(tot.s)}</p>
-          <button class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-txt text-[15px] font-semibold text-fundo disabled:opacity-60" disabled={enviando} onclick={salvar}>
-            <Check size={18} /> Já lancei tudo · fechar sem foto
+      <p class="titulo mt-1 mb-3 text-[20px] font-semibold">Como quer fechar?</p>
+      <div class="space-y-2.5" in:fade>
+        {#each opcoes as o, i (o.id)}
+          <button class="flex w-full items-center gap-3.5 rounded-[22px] border p-4 text-left transition-transform active:scale-[0.99] disabled:opacity-60 {i === 0 ? 'border-transparent bg-rosa text-white shadow-[0_12px_28px_-14px_rgba(194,69,106,.7)]' : 'border-linha bg-sup'}" disabled={enviando} onclick={o.acao}>
+            <span class="grid size-11 shrink-0 place-items-center rounded-full {i === 0 ? 'bg-white/20' : 'bg-rosa-fundo text-rosa'}"><o.icone size={21} /></span>
+            <span class="min-w-0 flex-1">
+              <span class="block text-[15.5px] font-semibold">{o.nome}</span>
+              <span class="block text-[13px] {i === 0 ? 'text-white/80' : 'text-txt-3'}">{o.sub}</span>
+            </span>
+            {#if enviando && o.id === 'lancados'}<span class="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>{:else}<ChevronRight size={18} class={i === 0 ? 'text-white/70' : 'text-txt-3'} />{/if}
           </button>
-        </div>
-      {/if}
+        {/each}
+      </div>
+      <p class="mt-4 px-2 text-center text-[12.5px] leading-relaxed text-txt-3">Na foto: a página do dia inteira, bem de cima e com luz.</p>
       <input bind:this={inputCamera} type="file" accept="image/*" capture="environment" class="hidden" onchange={escolheuFoto} />
       <input bind:this={inputGaleria} type="file" accept="image/*" class="hidden" onchange={escolheuFoto} />
 

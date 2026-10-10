@@ -50,7 +50,7 @@ Mudou o `Codigo.gs`? Ele não é publicado pelo GitHub: precisa colar no Apps Sc
 Usado pelo `/conferir-site`. **Teste sempre no modo demonstração** (`?demo` ou com `URL_SERVIDOR` vazio): os dados reais são da loja da mãe. Nunca grave nada no servidor real para testar.
 1. Abre sem erros no console nem violação de CSP; `manifest.json` e `sw.js` carregam.
 2. iPhone (390×844): nada vazando para os lados, barra inferior visível, formulários cabem na tela.
-3. Hoje: trocar de dia pelas setas; "Fechar o dia com a foto" → escolher uma imagem → revisar → salvar (chuva de pétalas, "Dia fechado"). Num dia com lançamentos, "Já lancei tudo · fechar sem foto" fecha direto.
+3. Hoje: trocar de dia pelas setas; "Fechar o dia" abre as opções: "Fechar com os itens já lançados" (só aparece se o dia tiver lançamentos), tirar foto, galeria (escolher imagem → revisar → salvar) e digitar sem foto. Ao fechar: chuva de pétalas e "Dia fechado".
 4. Entrada/Saída pelo teclado próprio; tocar num lançamento abre a edição.
 5. Encomendas: nova, marcar pronta/entregue, lançar sinal. Contas: nova, pagar (conta mensal cria a do mês seguinte), desfazer.
 6. Relatórios: trocar mês/ano, tocar num mês do gráfico, buscar, tabela.

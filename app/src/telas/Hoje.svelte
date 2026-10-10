@@ -1,11 +1,11 @@
 <script>
-  import { ChevronLeft, ChevronRight, Camera, Plus, Minus, CircleCheck, Receipt, ShoppingBag, CalendarClock, ImageIcon, RotateCcw } from '@lucide/svelte'
+  import { ChevronLeft, ChevronRight, BookCheck, NotebookPen, Plus, Minus, CircleCheck, Receipt, ShoppingBag, CalendarClock, ImageIcon, RotateCcw } from '@lucide/svelte'
   import { fade } from 'svelte/transition'
   import Dinheiro from '../componentes/Dinheiro.svelte'
   import ItemLanc from '../componentes/ItemLanc.svelte'
   import Flor from '../componentes/Flor.svelte'
   import Folha from '../componentes/Folha.svelte'
-  import { S, lancsDoDia, fechamento, totalTipo, abrirLanc, editarLanc, contasUrgentes, encomendasAtivas, irPara, reabrirDia, confirmar, tratarErro, avisar, fecharDia as fecharDiaSalvar } from '../lib/estado.svelte.js'
+  import { S, lancsDoDia, fechamento, totalTipo, abrirLanc, editarLanc, contasUrgentes, encomendasAtivas, irPara, reabrirDia, confirmar, tratarErro, avisar } from '../lib/estado.svelte.js'
   import { Api } from '../lib/api.js'
   import { hoje, ontem, somarDias, dataBonita, diasAte, fmt, mesAtual, somarMeses, nomeMes, mesDe, deISO, DIAS } from '../lib/formato.js'
   import { resumo, lancsDoMes } from '../lib/analise.js'
@@ -44,15 +44,6 @@
   }
   const fecharDia = () => (S.caderno = { data: S.dia })
 
-  // Tudo já foi lançado à mão: só confere os totais e fecha
-  let fechando = false
-  async function fecharSemFoto() {
-    if (fechando) return
-    const dia = S.dia
-    if (!(await confirmar(`Fechar ${dataBonita(dia).toLowerCase()}? Entrou ${fmt(ent)} e saiu ${fmt(sai)} (${lista.length} lançamento${lista.length > 1 ? 's' : ''}).`, { ok: 'Fechar o dia' }))) return
-    fechando = true
-    try { await fecharDiaSalvar(dia, []); avisar('Dia fechado') } catch (e) { tratarErro(e) } finally { fechando = false }
-  }
 </script>
 
 <header class="mb-5 flex items-end justify-between gap-3 lg:mb-7">
@@ -124,14 +115,11 @@
               <button class="grid size-9 place-items-center rounded-full bg-white/70" aria-label="Reabrir o dia" onclick={reabrir}><RotateCcw size={15} /></button>
             </div>
             {#if fech.obs}<p class="mt-2 px-1 text-[13px] text-txt-2 italic">“{fech.obs}”</p>{/if}
-            <button class="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={fecharDia}><Camera size={17} /> Adicionar mais do caderno</button>
+            <button class="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={fecharDia}><NotebookPen size={17} /> Adicionar mais ao dia</button>
           {:else}
             <button class="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-rosa text-[16.5px] font-semibold text-white shadow-[0_12px_28px_-12px_rgba(194,69,106,.7)] transition-transform active:scale-[0.98]" onclick={fecharDia}>
-              <Camera size={21} /> Fechar o dia com a foto
+              <BookCheck size={21} /> Fechar o dia
             </button>
-            {#if lista.length}
-              <button class="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={fecharSemFoto}><CircleCheck size={17} /> Já lancei tudo · fechar sem foto</button>
-            {/if}
           {/if}
           <div class="mt-2 grid grid-cols-2 gap-2">
             <button class="flex h-12 items-center justify-center gap-1.5 rounded-2xl bg-ent-fundo text-[15px] font-semibold text-ent active:scale-[0.98]" onclick={() => abrirLanc('entrada')}><Plus size={18} strokeWidth={2.4} /> Entrada</button>
