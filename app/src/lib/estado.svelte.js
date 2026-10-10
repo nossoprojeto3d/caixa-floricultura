@@ -4,7 +4,7 @@ import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
 import { cent, hoje, novoId, somarMeses, deISO, iso, diasAte } from './formato.js'
 
-export const VERSAO = '1.0.0'
+export const VERSAO = '1.0.1'
 const CHAVE_CACHE = 'ternura_cache'
 
 export const S = $state({

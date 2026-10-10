@@ -126,7 +126,12 @@
         </button>
       </div>
       {#if ja.length}
-        <p class="mt-5 text-center text-[13.5px] text-txt-3">Já lançado neste dia: {ja.length} lançamento{ja.length > 1 ? 's' : ''} · entradas {fmt(tot.e)}</p>
+        <div class="mt-4 rounded-[24px] border border-linha bg-sup p-4 text-center">
+          <p class="text-[13.5px] text-txt-2">Já lançado neste dia: {ja.length} lançamento{ja.length > 1 ? 's' : ''} · entrou {fmt(tot.e)} · saiu {fmt(tot.s)}</p>
+          <button class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-txt text-[15px] font-semibold text-fundo disabled:opacity-60" disabled={enviando} onclick={salvar}>
+            <Check size={18} /> Já lancei tudo · fechar sem foto
+          </button>
+        </div>
       {/if}
       <input bind:this={inputCamera} type="file" accept="image/*" capture="environment" class="hidden" onchange={escolheuFoto} />
       <input bind:this={inputGaleria} type="file" accept="image/*" class="hidden" onchange={escolheuFoto} />

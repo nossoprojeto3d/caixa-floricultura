@@ -5,7 +5,7 @@ PWA de caixa da **Ternura Flores**, a floricultura da mãe do dono do repositór
 
 Usuários: a mãe (celular Android ou iPhone) e o irmão (o outro), às vezes no computador. Sem login por pessoa: um **código de acesso** digitado uma vez em cada aparelho.
 
-Publicado em <https://nossoprojeto3d.github.io/caixa-floricultura/>. Versão: 1.0.0.
+Publicado em <https://nossoprojeto3d.github.io/caixa-floricultura/>. Versão: 1.0.1.
 
 ## Regras que não mudam
 - **Custo zero:** GitHub Pages + Google Sheets/Apps Script + Gemini grátis + Telegram. Nada pago sem autorização.
@@ -50,7 +50,7 @@ Mudou o `Codigo.gs`? Ele não é publicado pelo GitHub: precisa colar no Apps Sc
 Usado pelo `/conferir-site`. **Teste sempre no modo demonstração** (`?demo` ou com `URL_SERVIDOR` vazio): os dados reais são da loja da mãe. Nunca grave nada no servidor real para testar.
 1. Abre sem erros no console nem violação de CSP; `manifest.json` e `sw.js` carregam.
 2. iPhone (390×844): nada vazando para os lados, barra inferior visível, formulários cabem na tela.
-3. Hoje: trocar de dia pelas setas; "Fechar o dia com a foto" → escolher uma imagem → revisar → salvar (chuva de pétalas, "Dia fechado").
+3. Hoje: trocar de dia pelas setas; "Fechar o dia com a foto" → escolher uma imagem → revisar → salvar (chuva de pétalas, "Dia fechado"). Num dia com lançamentos, "Já lancei tudo · fechar sem foto" fecha direto.
 4. Entrada/Saída pelo teclado próprio; tocar num lançamento abre a edição.
 5. Encomendas: nova, marcar pronta/entregue, lançar sinal. Contas: nova, pagar (conta mensal cria a do mês seguinte), desfazer.
 6. Relatórios: trocar mês/ano, tocar num mês do gráfico, buscar, tabela.
