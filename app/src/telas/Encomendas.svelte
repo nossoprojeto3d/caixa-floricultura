@@ -58,7 +58,7 @@
 
 <header class="mb-5 flex items-center justify-between gap-3">
   <h1 class="titulo text-[30px] font-semibold lg:text-[34px]">Encomendas</h1>
-  <button class="flex h-11 items-center gap-1.5 rounded-full bg-rosa px-4 text-[15px] font-semibold text-white active:scale-[0.97]" onclick={() => abrirEncomenda()}><Plus size={18} strokeWidth={2.4} /> Nova</button>
+  <button class="flex h-11 items-center gap-1.5 rounded-full bg-destaque px-4 text-[15px] font-semibold text-white active:scale-[0.97]" onclick={() => abrirEncomenda()}><Plus size={18} strokeWidth={2.4} /> Nova</button>
 </header>
 
 <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -75,7 +75,7 @@
 
 {#if !grupos.length}
   <div class="cartao px-6 py-12 text-center" in:fade>
-    <Gift size={34} class="mx-auto text-rosa" strokeWidth={1.6} />
+    <Gift size={34} class="mx-auto text-destaque" strokeWidth={1.6} />
     <p class="titulo mt-3 text-[19px] font-semibold">{busca ? 'Nada encontrado' : aba === 'ativas' ? 'Nenhuma encomenda para entregar' : 'Nenhuma encomenda entregue ainda'}</p>
     {#if aba === 'ativas' && !busca}<p class="mt-1 text-[14px] text-txt-3">Toque em “Nova” para anotar um pedido.</p>{/if}
   </div>
@@ -84,7 +84,7 @@
 <div class="grid gap-5 lg:grid-cols-2 lg:gap-x-6">
   {#each grupos as [k, itens] (k)}
     <section>
-      <h2 class="mb-2 px-1 text-[13.5px] font-semibold tracking-wide uppercase {k === 'atrasada' ? 'text-sai' : k === hoje() ? 'text-rosa' : 'text-txt-3'}">{tituloGrupo(k)}</h2>
+      <h2 class="mb-2 px-1 text-[13.5px] font-semibold tracking-wide uppercase {k === 'atrasada' ? 'text-sai' : k === hoje() ? 'text-destaque' : 'text-txt-3'}">{tituloGrupo(k)}</h2>
       <div class="space-y-2.5">
         {#each itens as e (e.id)}
           {@const st = STATUS_ENCOMENDA[e.status]}
@@ -125,11 +125,11 @@
     <div class="mt-4 space-y-2.5 rounded-2xl border border-linha bg-sup p-4 text-[14.5px]">
       {#if det.modo === 'entrega' && det.endereco}<p class="flex gap-2.5"><MapPin size={17} class="mt-0.5 shrink-0 text-txt-3" />{det.endereco}</p>{/if}
       {#if det.destinatario}<p class="flex gap-2.5"><User size={17} class="mt-0.5 shrink-0 text-txt-3" />Para {det.destinatario}</p>{/if}
-      {#if det.cartao}<p class="flex gap-2.5 italic"><Gift size={17} class="mt-0.5 shrink-0 text-rosa" />“{det.cartao}”</p>{/if}
+      {#if det.cartao}<p class="flex gap-2.5 italic"><Gift size={17} class="mt-0.5 shrink-0 text-destaque" />“{det.cartao}”</p>{/if}
       {#if det.obs}<p class="text-txt-2">{det.obs}</p>{/if}
       <div class="flex justify-between border-t border-linha pt-2.5"><span class="text-txt-2">Valor</span><span class="font-semibold">{fmt(det.valor)}</span></div>
       {#if det.sinal}<div class="flex justify-between"><span class="text-txt-2">Sinal pago</span><span>{fmt(det.sinal)}</span></div>{/if}
-      {#if det.valor > det.sinal}<div class="flex justify-between"><span class="text-txt-2">Falta receber</span><span class="font-semibold text-rosa">{fmt(det.valor - det.sinal)}</span></div>{/if}
+      {#if det.valor > det.sinal}<div class="flex justify-between"><span class="text-txt-2">Falta receber</span><span class="font-semibold text-destaque">{fmt(det.valor - det.sinal)}</span></div>{/if}
     </div>
 
     <div class="mt-4 grid grid-cols-2 gap-2">

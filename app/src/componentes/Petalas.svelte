@@ -3,7 +3,8 @@
   import { S } from '../lib/estado.svelte.js'
   let chuva = $state([])
   let ultimo = S.flores
-  const CORES = ['#c2456a', '#de6f8e', '#f2a7bb', '#e8c46a', '#f7d6df']
+  // folhas verdes com algumas pétalas: a loja é verde, mas é floricultura
+  const CORES = ['#2f5d45', '#5f9a6e', '#9cc9a4', '#e8c46a', '#de6f8e']
   $effect(() => {
     if (S.flores === ultimo) return
     ultimo = S.flores

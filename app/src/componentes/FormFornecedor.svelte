@@ -28,6 +28,6 @@
     <Campo rotulo="Chave Pix"><input class="campo" bind:value={f.pix} maxlength="100" /></Campo>
     <Campo rotulo="Observação"><input class="campo" bind:value={f.obs} maxlength="200" placeholder="Ex.: entrega terça e sexta" /></Campo>
   </div>
-  <button class="mt-6 h-13 w-full rounded-2xl bg-rosa text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : 'Salvar'}</button>
+  <button class="mt-6 h-13 w-full rounded-2xl bg-destaque text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : 'Salvar'}</button>
   {#if f.id}<button class="mt-2 h-12 w-full rounded-2xl text-[15px] font-medium text-sai" onclick={excluir}>Apagar fornecedor</button>{/if}
 </Folha>

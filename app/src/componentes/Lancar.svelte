@@ -104,7 +104,7 @@
       </div>
       <div class="-mx-5 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none]">
         {#each formas as p}
-          <button class="h-9 shrink-0 rounded-full px-3.5 text-[13.5px] font-medium transition-colors {f.forma === p ? 'bg-rosa-fundo text-rosa-forte' : 'text-txt-2 hover:bg-sup-2'}" onclick={() => (f.forma = f.forma === p ? '' : p)}>{p}</button>
+          <button class="h-9 shrink-0 rounded-full px-3.5 text-[13.5px] font-medium transition-colors {f.forma === p ? 'bg-destaque-fundo text-destaque-forte' : 'text-txt-2 hover:bg-sup-2'}" onclick={() => (f.forma = f.forma === p ? '' : p)}>{p}</button>
         {/each}
       </div>
       <input bind:value={f.descricao} maxlength="120" enterkeyhint="done" onkeydown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}

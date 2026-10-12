@@ -1,7 +1,7 @@
 <script>
   // Uma série só, em colunas (dias do mês ou dias da semana), com dica ao tocar
   import { fmt, fmtCurto } from '../lib/formato.js'
-  let { itens, rotulo, dica, altura = 120, cor = 'var(--color-rosa)', mostrarValor = false, destaque = -1 } = $props()
+  let { itens, rotulo, dica, altura = 120, cor = 'var(--color-destaque)', mostrarValor = false, destaque = -1 } = $props()
   let largura = $state(300)
   const max = $derived(Math.max(1, ...itens.map(x => x.valor)))
   const col = $derived(largura / Math.max(1, itens.length))

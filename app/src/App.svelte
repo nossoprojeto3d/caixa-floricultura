@@ -37,10 +37,10 @@
   <nav class="sticky top-0 hidden h-dvh w-[240px] shrink-0 flex-col border-r border-linha bg-sup/50 px-4 py-6 lg:flex" aria-label="Navegação">
     <div class="mb-8 flex items-center gap-2.5 px-2">
       <img src="./favicon.svg" alt="" class="size-9" />
-      <span class="titulo text-[19px] leading-tight font-semibold">Ternura<br /><em class="font-normal text-rosa">Flores</em></span>
+      <span class="titulo text-[19px] leading-tight font-semibold">Ternura<br /><em class="font-normal text-destaque">Flores</em></span>
     </div>
     {#each NAV as [id, rot, Icone]}
-      <button class="mb-1 flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] transition-colors {S.tela === id ? 'bg-rosa-fundo font-semibold text-rosa-forte' : 'text-txt-2 hover:bg-sup-2'}" aria-current={S.tela === id ? 'page' : undefined} onclick={() => irPara(id)}>
+      <button class="mb-1 flex h-11 items-center gap-3 rounded-xl px-3 text-[15px] transition-colors {S.tela === id ? 'bg-destaque-fundo font-semibold text-destaque-forte' : 'text-txt-2 hover:bg-sup-2'}" aria-current={S.tela === id ? 'page' : undefined} onclick={() => irPara(id)}>
         <Icone size={19} strokeWidth={S.tela === id ? 2.2 : 1.8} /><span class="flex-1 text-left">{rot}</span>
         {#if marca[id]}<span class="grid size-5 place-items-center rounded-full bg-sai text-[11px] font-bold text-white">{marca[id]}</span>{/if}
       </button>
@@ -62,7 +62,7 @@
   <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-linha bg-fundo/90 pb-seguro backdrop-blur-xl lg:hidden" aria-label="Navegação">
     <div class="mx-auto grid h-16 max-w-md grid-cols-5 items-center">
       {#each NAV as [id, rot, Icone]}
-        <button class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] transition-colors {S.tela === id ? 'font-semibold text-rosa' : 'text-txt-3'}" aria-current={S.tela === id ? 'page' : undefined} onclick={() => irPara(id)}>
+        <button class="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] transition-colors {S.tela === id ? 'font-semibold text-destaque' : 'text-txt-3'}" aria-current={S.tela === id ? 'page' : undefined} onclick={() => irPara(id)}>
           <Icone size={22} strokeWidth={S.tela === id ? 2.2 : 1.7} />{rot}
           {#if marca[id]}<span class="absolute top-2 left-[calc(50%+6px)] grid size-4 place-items-center rounded-full bg-sai text-[10px] font-bold text-white">{marca[id]}</span>{/if}
         </button>
@@ -76,7 +76,7 @@
   {#if S[chave]}
     {#if tela.largo}
       <div class="trava-rolagem fixed inset-0 z-[52]">
-        <button class="absolute inset-0 bg-[#2d2026]/40" aria-label="Fechar" onclick={() => chave === 'lanc' && (S.lanc = null)} transition:fade={{ duration: 180 }}></button>
+        <button class="absolute inset-0 bg-[#1d2a22]/40" aria-label="Fechar" onclick={() => chave === 'lanc' && (S.lanc = null)} transition:fade={{ duration: 180 }}></button>
         <div class="absolute inset-y-3 right-3 w-[440px] overflow-hidden rounded-[28px] bg-fundo shadow-2xl" transition:fly={{ x: 460, duration: 300, easing: cubicOut }}>
           <Comp modo="painel" />
         </div>
@@ -99,12 +99,12 @@
 <!-- Confirmação própria do app -->
 {#if S.confirmar}
   <div class="trava-rolagem fixed inset-0 z-[66] flex items-center justify-center px-6" role="alertdialog" aria-modal="true">
-    <button class="absolute inset-0 bg-[#2d2026]/50" aria-label="Cancelar" onclick={() => responderConfirmacao(false)} transition:fade={{ duration: 150 }}></button>
+    <button class="absolute inset-0 bg-[#1d2a22]/50" aria-label="Cancelar" onclick={() => responderConfirmacao(false)} transition:fade={{ duration: 150 }}></button>
     <div class="relative w-full max-w-sm rounded-[24px] bg-fundo p-5 shadow-2xl" transition:fly={{ y: 12, duration: 200 }}>
       <p class="text-[16px] leading-relaxed">{S.confirmar.texto}</p>
       <div class="mt-5 grid grid-cols-2 gap-2">
         <button class="h-12 rounded-2xl bg-sup-2 text-[15px] font-semibold" onclick={() => responderConfirmacao(false)}>Cancelar</button>
-        <button class="h-12 rounded-2xl text-[15px] font-semibold text-white {S.confirmar.perigo ? 'bg-sai' : 'bg-rosa'}" onclick={() => responderConfirmacao(true)}>{S.confirmar.ok}</button>
+        <button class="h-12 rounded-2xl text-[15px] font-semibold text-white {S.confirmar.perigo ? 'bg-sai' : 'bg-destaque'}" onclick={() => responderConfirmacao(true)}>{S.confirmar.ok}</button>
       </div>
     </div>
   </div>

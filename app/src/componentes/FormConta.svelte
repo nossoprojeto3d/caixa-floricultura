@@ -64,6 +64,6 @@
     <Campo rotulo="Código de barras / Pix copia e cola" dica="Opcional. Dá para copiar daqui na hora de pagar."><textarea class="campo h-20 resize-none py-3 font-mono text-[14px]" bind:value={f.codigo} maxlength="400"></textarea></Campo>
     <Campo rotulo="Observação"><input class="campo" bind:value={f.obs} maxlength="200" /></Campo>
   </div>
-  <button class="mt-6 h-13 w-full rounded-2xl bg-rosa text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : f.id ? 'Salvar alterações' : 'Anotar conta'}</button>
+  <button class="mt-6 h-13 w-full rounded-2xl bg-destaque text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : f.id ? 'Salvar alterações' : 'Anotar conta'}</button>
   {#if f.id}<button class="mt-2 h-12 w-full rounded-2xl text-[15px] font-medium text-sai" onclick={excluir}>Apagar conta</button>{/if}
 </Folha>

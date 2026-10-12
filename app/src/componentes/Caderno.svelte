@@ -144,8 +144,8 @@
       <p class="titulo mt-1 mb-3 text-[20px] font-semibold">Como quer fechar?</p>
       <div class="space-y-2.5" in:fade>
         {#each opcoes as o, i (o.id)}
-          <button class="flex w-full items-center gap-3.5 rounded-[22px] border p-4 text-left transition-transform active:scale-[0.99] disabled:opacity-60 {i === 0 ? 'border-transparent bg-rosa text-white shadow-[0_12px_28px_-14px_rgba(194,69,106,.7)]' : 'border-linha bg-sup'}" disabled={enviando} onclick={o.acao}>
-            <span class="grid size-11 shrink-0 place-items-center rounded-full {i === 0 ? 'bg-white/20' : 'bg-rosa-fundo text-rosa'}"><o.icone size={21} /></span>
+          <button class="flex w-full items-center gap-3.5 rounded-[22px] border p-4 text-left transition-transform active:scale-[0.99] disabled:opacity-60 {i === 0 ? 'border-transparent bg-destaque text-white shadow-[0_12px_28px_-14px_rgba(47,93,69,.7)]' : 'border-linha bg-sup'}" disabled={enviando} onclick={o.acao}>
+            <span class="grid size-11 shrink-0 place-items-center rounded-full {i === 0 ? 'bg-white/20' : 'bg-destaque-fundo text-destaque'}"><o.icone size={21} /></span>
             <span class="min-w-0 flex-1">
               <span class="block text-[15.5px] font-semibold">{o.nome}</span>
               <span class="block text-[13px] {i === 0 ? 'text-white/80' : 'text-txt-3'}">{o.sub}</span>
@@ -164,7 +164,7 @@
           <img src={foto} alt="Foto do caderno" class="block w-full" />
           <div class="scanner absolute inset-x-0 h-24"></div>
         </div>
-        <p class="titulo mt-5 flex items-center gap-2 text-[19px] font-semibold"><Sparkles size={18} class="text-rosa" /> Lendo o caderno…</p>
+        <p class="titulo mt-5 flex items-center gap-2 text-[19px] font-semibold"><Sparkles size={18} class="text-destaque" /> Lendo o caderno…</p>
         <p class="mt-1 text-[13.5px] text-txt-3">Leva uns segundinhos.</p>
       </div>
 
@@ -176,7 +176,7 @@
         <div class="mb-3 flex gap-2.5 rounded-2xl bg-alerta-fundo p-3.5 text-[13.5px] leading-snug text-alerta" transition:slide><CircleAlert size={18} class="mt-px shrink-0" />{aviso}</div>
       {/if}
       {#if foto}
-        <p class="mb-3 text-[13.5px] text-txt-2">Confira cada linha com o caderno. As marcadas em amarelo eu não li direito. <button class="font-semibold text-rosa underline underline-offset-2" onclick={() => (verFoto = true)}>Ver a foto</button></p>
+        <p class="mb-3 text-[13.5px] text-txt-2">Confira cada linha com o caderno. As marcadas em amarelo eu não li direito. <button class="font-semibold text-destaque underline underline-offset-2" onclick={() => (verFoto = true)}>Ver a foto</button></p>
       {/if}
 
       {#if ja.length}
@@ -245,7 +245,7 @@
 
       <div class="mt-4 rounded-[24px] bg-txt p-4 text-fundo">
         <div class="grid grid-cols-3 gap-2 text-center">
-          <div><p class="text-[12px] opacity-60">Entrou</p><Dinheiro valor={tot.e} class="text-[18px] font-semibold text-[#9fe0b6]" /></div>
+          <div><p class="text-[12px] opacity-60">Entrou</p><Dinheiro valor={tot.e} class="text-[18px] font-semibold text-[#8fe0cc]" /></div>
           <div><p class="text-[12px] opacity-60">Saiu</p><Dinheiro valor={tot.s} class="text-[18px] font-semibold text-[#f5b3a3]" /></div>
           <div><p class="text-[12px] opacity-60">Saldo</p><Dinheiro valor={tot.e - tot.s} class="text-[18px] font-semibold" /></div>
         </div>
@@ -260,7 +260,7 @@
 
   {#if etapa === 'revisar'}
     <div class="border-t border-linha bg-fundo px-4 pt-3 pb-[max(16px,env(safe-area-inset-bottom))] {modo === 'painel' ? 'px-5 pb-5' : ''}">
-      <button class="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-rosa text-[17px] font-semibold text-white active:scale-[0.98] disabled:opacity-60" disabled={enviando} onclick={salvar}>
+      <button class="flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-destaque text-[17px] font-semibold text-white active:scale-[0.98] disabled:opacity-60" disabled={enviando} onclick={salvar}>
         {#if enviando}<span class="size-5 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
         {:else}<Check size={20} /> Salvar e fechar o dia{/if}
       </button>
@@ -269,7 +269,7 @@
 </div>
 
 {#if verFoto}
-  <div class="fixed inset-0 z-[65] flex flex-col bg-[#1d1418]" transition:fade={{ duration: 150 }}>
+  <div class="fixed inset-0 z-[65] flex flex-col bg-[#141c17]" transition:fade={{ duration: 150 }}>
     <div class="flex items-center justify-between px-3 pt-[max(12px,env(safe-area-inset-top))] pb-2 text-white">
       <div class="flex gap-1">
         <button class="grid size-11 place-items-center rounded-full bg-white/10" aria-label="Diminuir" onclick={() => (zoom = Math.max(1, zoom - 0.5))}><ZoomOut size={20} /></button>
@@ -285,8 +285,8 @@
 
 <style>
   .scanner {
-    background: linear-gradient(to bottom, transparent, rgba(194, 69, 106, 0.28), transparent);
-    border-bottom: 2px solid rgba(194, 69, 106, 0.8);
+    background: linear-gradient(to bottom, transparent, rgba(47, 93, 69, 0.28), transparent);
+    border-bottom: 2px solid rgba(47, 93, 69, 0.8);
     animation: varrer 1.8s ease-in-out infinite alternate;
   }
   @keyframes varrer { from { top: -6rem } to { top: 100% } }

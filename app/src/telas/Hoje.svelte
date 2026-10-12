@@ -49,7 +49,7 @@
 <header class="mb-5 flex items-end justify-between gap-3 lg:mb-7">
   <div>
     <p class="text-[14px] text-txt-3">{saudacao} · {DIAS[new Date().getDay()]}</p>
-    <h1 class="titulo text-[30px] leading-tight font-semibold lg:text-[36px]">Ternura <em class="font-normal text-rosa">Flores</em></h1>
+    <h1 class="titulo text-[30px] leading-tight font-semibold lg:text-[36px]">Ternura <em class="font-normal text-destaque">Flores</em></h1>
   </div>
 </header>
 
@@ -66,8 +66,8 @@
       </button>
     {/if}
     {#if encProximas.length}
-      <button class="flex shrink-0 items-center gap-3 rounded-[20px] border border-rosa/20 bg-rosa-fundo py-3 pr-4 pl-3 text-left" onclick={() => irPara('encomendas')}>
-        <span class="grid size-10 place-items-center rounded-full bg-white/70 text-rosa"><ShoppingBag size={19} /></span>
+      <button class="flex shrink-0 items-center gap-3 rounded-[20px] border border-destaque/20 bg-destaque-fundo py-3 pr-4 pl-3 text-left" onclick={() => irPara('encomendas')}>
+        <span class="grid size-10 place-items-center rounded-full bg-white/70 text-destaque"><ShoppingBag size={19} /></span>
         <span>
           <span class="block text-[14.5px] font-semibold">{encProximas.length} encomenda{encProximas.length > 1 ? 's' : ''}</span>
           <span class="block text-[12.5px] text-txt-2">Para hoje e amanhã</span>
@@ -117,7 +117,7 @@
             {#if fech.obs}<p class="mt-2 px-1 text-[13px] text-txt-2 italic">“{fech.obs}”</p>{/if}
             <button class="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={fecharDia}><NotebookPen size={17} /> Adicionar mais ao dia</button>
           {:else}
-            <button class="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-rosa text-[16.5px] font-semibold text-white shadow-[0_12px_28px_-12px_rgba(194,69,106,.7)] transition-transform active:scale-[0.98]" onclick={fecharDia}>
+            <button class="flex h-14 w-full items-center justify-center gap-2.5 rounded-2xl bg-destaque text-[16.5px] font-semibold text-white shadow-[0_12px_28px_-12px_rgba(47,93,69,.7)] transition-transform active:scale-[0.98]" onclick={fecharDia}>
               <BookCheck size={21} /> Fechar o dia
             </button>
           {/if}
@@ -161,7 +161,7 @@
 {#if foto}
   <Folha titulo="Foto do caderno" aoFechar={() => (foto = null)} largo>
     {#if foto.carregando}
-      <div class="grid h-60 place-items-center"><span class="size-8 animate-spin rounded-full border-2 border-rosa/30 border-t-rosa"></span></div>
+      <div class="grid h-60 place-items-center"><span class="size-8 animate-spin rounded-full border-2 border-destaque/30 border-t-destaque"></span></div>
     {:else}
       <img src={foto.url} alt="Foto do caderno" class="w-full rounded-2xl" />
     {/if}

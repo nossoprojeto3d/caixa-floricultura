@@ -1,21 +1,21 @@
 @import 'tailwindcss';
 
-/* Identidade "Ternura": papel creme de caderno, tinta ameixa e um só destaque rosa.
-   Entradas em verde-folha, saídas em terracota. */
+/* Identidade "Ternura": papel de folha clara, tinta verde-musgo e um só destaque verde-eucalipto.
+   Entradas em verde-água, saídas em terracota (par validado para daltonismo). */
 @theme {
-  --color-fundo: #faf5ef;
+  --color-fundo: #f3f5ee;
   --color-sup: #ffffff;
-  --color-sup-2: #f5ede4;
-  --color-sup-3: #ebe0d4;
-  --color-linha: #ecdfd2;
-  --color-txt: #2d2026;
-  --color-txt-2: #6f5d64;
-  --color-txt-3: #a4949a;
-  --color-rosa: #c2456a;
-  --color-rosa-forte: #a8355a;
-  --color-rosa-fundo: #fbe4ea;
-  --color-ent: #3c8a5c;
-  --color-ent-fundo: #e2f1e6;
+  --color-sup-2: #e9eee3;
+  --color-sup-3: #dce4d5;
+  --color-linha: #dfe6d7;
+  --color-txt: #1d2a22;
+  --color-txt-2: #546358;
+  --color-txt-3: #8e9b91;
+  --color-destaque: #2f5d45;
+  --color-destaque-forte: #234935;
+  --color-destaque-fundo: #e2ede0;
+  --color-ent: #178a72;
+  --color-ent-fundo: #dcefe9;
   --color-sai: #c4553c;
   --color-sai-fundo: #fae5de;
   --color-alerta: #b97b12;
@@ -38,7 +38,7 @@
   button { cursor: pointer; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
   /* com algo aberto por cima, a tela de trás não rola junto */
   body:has(.trava-rolagem) { overflow: hidden; }
-  :focus-visible { outline: 2px solid var(--color-rosa); outline-offset: 2px; border-radius: 8px; }
+  :focus-visible { outline: 2px solid var(--color-destaque); outline-offset: 2px; border-radius: 8px; }
   input, select, textarea { font-size: 16px; } /* abaixo disso o iPhone dá zoom */
   input[type='date'], input[type='time'] { min-height: 44px; }
 }
@@ -67,7 +67,7 @@
   font-size: 16px;
   color: var(--color-txt);
   &::placeholder { color: var(--color-txt-3); }
-  &:focus { outline: none; border-color: var(--color-rosa); box-shadow: 0 0 0 3px var(--color-rosa-fundo); }
+  &:focus { outline: none; border-color: var(--color-destaque); box-shadow: 0 0 0 3px var(--color-destaque-fundo); }
 }
 
 /* Cartão branco sobre o papel */
@@ -75,12 +75,12 @@
   background: var(--color-sup);
   border: 1px solid var(--color-linha);
   border-radius: 24px;
-  box-shadow: 0 1px 0 rgba(80, 40, 50, 0.03), 0 12px 32px -20px rgba(80, 40, 50, 0.18);
+  box-shadow: 0 1px 0 rgba(30, 50, 40, 0.03), 0 12px 32px -20px rgba(30, 50, 40, 0.2);
 }
 
 /* Linhas de caderno ao fundo */
 @utility pautado {
-  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(194, 69, 106, 0.07) 31px 32px);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgba(47, 93, 69, 0.08) 31px 32px);
 }
 
 @utility pb-seguro { padding-bottom: env(safe-area-inset-bottom); }

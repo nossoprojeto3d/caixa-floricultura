@@ -15,7 +15,7 @@
 <svelte:window onkeydown={tecla} />
 
 <div class="trava-rolagem fixed inset-0 z-50 flex items-end justify-center lg:items-center">
-  <button class="absolute inset-0 bg-[#2d2026]/40 backdrop-blur-[2px]" aria-label="Fechar" onclick={aoFechar} transition:fade={{ duration: 180 }}></button>
+  <button class="absolute inset-0 bg-[#1d2a22]/40 backdrop-blur-[2px]" aria-label="Fechar" onclick={aoFechar} transition:fade={{ duration: 180 }}></button>
   <div
     role="dialog"
     aria-modal="true"

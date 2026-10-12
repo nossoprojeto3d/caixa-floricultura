@@ -48,7 +48,7 @@
 
 <header class="mb-5 flex items-center justify-between gap-3">
   <h1 class="titulo text-[30px] font-semibold lg:text-[34px]">Contas</h1>
-  <button class="flex h-11 items-center gap-1.5 rounded-full bg-rosa px-4 text-[15px] font-semibold text-white active:scale-[0.97]" onclick={() => abrirConta()}><Plus size={18} strokeWidth={2.4} /> Nova</button>
+  <button class="flex h-11 items-center gap-1.5 rounded-full bg-destaque px-4 text-[15px] font-semibold text-white active:scale-[0.97]" onclick={() => abrirConta()}><Plus size={18} strokeWidth={2.4} /> Nova</button>
 </header>
 
 <div class="mb-4 grid grid-cols-2 gap-3">
@@ -126,9 +126,9 @@
 
     {#if c.codigo}
       <button class="mt-3 flex w-full items-center gap-3 rounded-2xl border border-linha bg-sup p-3.5 text-left" onclick={() => copiar(c.codigo)}>
-        <Copy size={18} class="shrink-0 text-rosa" />
+        <Copy size={18} class="shrink-0 text-destaque" />
         <span class="min-w-0 flex-1 truncate font-mono text-[13px] text-txt-2">{c.codigo}</span>
-        <span class="shrink-0 text-[13px] font-semibold text-rosa">Copiar</span>
+        <span class="shrink-0 text-[13px] font-semibold text-destaque">Copiar</span>
       </button>
     {/if}
 

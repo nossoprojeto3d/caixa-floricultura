@@ -82,7 +82,7 @@
 <div class="cartao divide-y divide-linha/70 overflow-hidden lg:max-w-2xl">
   {#each ITENS as [id, Icone, nome, sub]}
     <button class="flex min-h-16 w-full items-center gap-3.5 px-4 py-3 text-left hover:bg-sup-2/60" onclick={() => (id === 'telegram' ? abrirTelegram() : (painel = id))}>
-      <span class="grid size-10 place-items-center rounded-full bg-rosa-fundo text-rosa"><Icone size={19} /></span>
+      <span class="grid size-10 place-items-center rounded-full bg-destaque-fundo text-destaque"><Icone size={19} /></span>
       <span class="flex-1"><span class="block text-[15.5px] font-medium">{nome}</span><span class="text-[13px] text-txt-3">{sub()}</span></span>
       <ChevronRight size={18} class="text-txt-3" />
     </button>
@@ -98,7 +98,7 @@
 
 {#if painel === 'fornecedores'}
   <Folha titulo="Fornecedores" aoFechar={() => (painel = null)} largo>
-    <button class="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-rosa text-[15px] font-semibold text-white" onclick={() => abrirFornecedor()}><Plus size={18} /> Novo fornecedor</button>
+    <button class="mb-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-destaque text-[15px] font-semibold text-white" onclick={() => abrirFornecedor()}><Plus size={18} /> Novo fornecedor</button>
     {#if !S.fornecedores.length}<p class="py-6 text-center text-[14px] text-txt-3">Nenhum fornecedor ainda.</p>{/if}
     <div class="space-y-2.5">
       {#each [...S.fornecedores].sort((a, b) => a.nome.localeCompare(b.nome)) as f (f.id)}
@@ -146,7 +146,7 @@
 {#if cat}
   <Folha titulo={cat.id ? 'Renomear categoria' : 'Nova categoria'} aoFechar={() => (cat = null)}>
     <Campo rotulo="Nome"><input class="campo" bind:value={cat.nome} maxlength="40" /></Campo>
-    <button class="mt-5 h-12 w-full rounded-2xl bg-rosa text-[15px] font-semibold text-white" onclick={salvarCat}>Salvar</button>
+    <button class="mt-5 h-12 w-full rounded-2xl bg-destaque text-[15px] font-semibold text-white" onclick={salvarCat}>Salvar</button>
   </Folha>
 {/if}
 
@@ -166,7 +166,7 @@
     {#if demo}
       <p class="mt-4 rounded-2xl bg-alerta-fundo p-4 text-[13.5px] text-alerta">No modo demonstração o Telegram fica desligado. Ele funciona depois de configurar a planilha (veja o guia no GitHub).</p>
     {:else if !info}
-      <div class="grid h-24 place-items-center"><span class="size-7 animate-spin rounded-full border-2 border-rosa/30 border-t-rosa"></span></div>
+      <div class="grid h-24 place-items-center"><span class="size-7 animate-spin rounded-full border-2 border-destaque/30 border-t-destaque"></span></div>
     {:else if info.telegram?.configurado}
       {#if info.telegram.bot}
         <a class="mt-4 flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#2a9fd8] text-[15px] font-semibold text-white" href="https://t.me/{info.telegram.bot}?start={encodeURIComponent(codigoSalvo())}" target="_blank" rel="noopener"><Send size={17} /> Conectar o Telegram deste celular</a>

@@ -59,6 +59,6 @@
     <Campo rotulo="Mensagem do cartão"><textarea class="campo h-20 resize-none py-3" bind:value={f.cartao} maxlength="300" placeholder="Se tiver cartãozinho"></textarea></Campo>
     <Campo rotulo="Observação"><input class="campo" bind:value={f.obs} maxlength="200" /></Campo>
   </div>
-  <button class="mt-6 h-13 w-full rounded-2xl bg-rosa text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : f.id ? 'Salvar alterações' : 'Anotar encomenda'}</button>
+  <button class="mt-6 h-13 w-full rounded-2xl bg-destaque text-[16px] font-semibold text-white disabled:opacity-60" disabled={enviando} onclick={salvar}>{enviando ? 'Salvando…' : f.id ? 'Salvar alterações' : 'Anotar encomenda'}</button>
   {#if f.id}<button class="mt-2 h-12 w-full rounded-2xl text-[15px] font-medium text-sai" onclick={excluir}>Apagar encomenda</button>{/if}
 </Folha>
