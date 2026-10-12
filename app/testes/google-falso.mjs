@@ -1,0 +1,88 @@
+// Simula o pedaço do Google Apps Script que o Codigo.gs usa (planilha, propriedades,
+// trava, cache, Drive, Telegram), para testar o servidor no Node sem conta Google.
+import { readFileSync } from 'node:fs'
+import vm from 'node:vm'
+
+class Faixa {
+  constructor(aba, l, c, nl, nc) { Object.assign(this, { aba, l, c, nl, nc }) }
+  getValues() {
+    const r = []
+    for (let i = 0; i < this.nl; i++) {
+      const linha = this.aba.dados[this.l - 1 + i] || []
+      r.push(Array.from({ length: this.nc }, (_, j) => linha[this.c - 1 + j] ?? ''))
+    }
+    return r
+  }
+  getDisplayValues() { return this.getValues().map(r => r.map(v => String(v))) }
+  setValues(v) {
+    this.aba.escritas++
+    v.forEach((linha, i) => {
+      const idx = this.l - 1 + i
+      while (this.aba.dados.length <= idx) this.aba.dados.push([])
+      linha.forEach((x, j) => {
+        // como o Sheets: o apóstrofo do começo só marca "é texto" e some
+        this.aba.dados[idx][this.c - 1 + j] = typeof x === 'string' && x.startsWith("'") ? x.slice(1) : x
+      })
+    })
+    return this
+  }
+  setNumberFormat() { return this }
+  setFontWeight() { return this }
+  setBackground() { return this }
+}
+
+class Aba {
+  constructor(nome) { this.nome = nome; this.dados = []; this.escritas = 0 }
+  getRange(l, c, nl = 1, nc = 1) { return new Faixa(this, l, c, nl, nc) }
+  getLastRow() { return this.dados.length }
+  getMaxRows() { return Math.max(1000, this.dados.length) }
+  setFrozenRows() {}
+  deleteRow(l) { this.dados.splice(l - 1, 1) }
+}
+
+export function carregarServidor({ props = {} } = {}) {
+  const abas = new Map()
+  const propriedades = { ...props }
+  const cache = new Map()
+  const telegram = []
+  const planilha = {
+    getSheetByName: n => abas.get(n) || null,
+    insertSheet: n => { const a = new Aba(n); abas.set(n, a); return a },
+    getSheets: () => [...abas.values()],
+    deleteSheet: a => abas.delete(a.nome),
+    getUrl: () => 'https://docs.google.com/spreadsheets/d/falso',
+  }
+  const pad = n => String(n).padStart(2, '0')
+  const ctx = {
+    console: { log() {}, warn() {}, error() {} },
+    SpreadsheetApp: { getActiveSpreadsheet: () => planilha },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => propriedades[k] ?? null, setProperty: (k, v) => { propriedades[k] = v } }) },
+    CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v) }) },
+    LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
+    Session: { getScriptTimeZone: () => 'America/Sao_Paulo' },
+    Utilities: {
+      formatDate: (d, tz, f) => f === 'HH:mm' ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : f === 'HHmmss' ? '120000' : `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+      base64Decode: s => Buffer.from(s, 'base64'), base64Encode: b => Buffer.from(b).toString('base64'),
+      newBlob: (bytes, tipo, nome) => ({ bytes, tipo, nome }),
+    },
+    ContentService: { createTextOutput: t => ({ texto: t, setMimeType() { return this } }), MimeType: { JSON: 'json' } },
+    UrlFetchApp: {
+      fetch: (url, op) => {
+        const corpo = JSON.parse(op.payload || '{}')
+        telegram.push({ url, corpo })
+        const r = url.endsWith('/getUpdates') ? [] : url.endsWith('/getMe') ? { username: 'bot_teste' } : { ok: true }
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ ok: true, result: r }) }
+      },
+    },
+    DriveApp: { getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
+    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyDays: () => ({ atHour: () => ({ nearMinute: () => ({ create() {} }) }) }) }) }) },
+  }
+  vm.createContext(ctx)
+  const codigo = readFileSync(new URL('../../apps-script/Codigo.gs', import.meta.url), 'utf8')
+  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, TABELAS };', ctx)
+  const s = ctx.__s
+  // chama como o app chama: POST com JSON no corpo
+  const post = (acao, dados = {}, codigoAcesso = propriedades.CODIGO_ACESSO) =>
+    JSON.parse(s.doPost({ postData: { contents: JSON.stringify({ acao, codigo: codigoAcesso, ...dados }) } }).texto)
+  return { ...s, post, abas, propriedades, telegram, cache }
+}

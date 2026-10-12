@@ -79,3 +79,11 @@ export function mesComparavel(lancs, m, deslocamento) {
   const lim = `${outro}-${String(Math.min(dia, diasNoMes(outro))).padStart(2, '0')}`
   return resumo(lista.filter(l => l.data <= lim))
 }
+
+// Ano anterior para comparar. Se o ano é o atual, pega o anterior só até o mesmo dia e mês de hoje.
+export function anoComparavel(lancs, ano) {
+  const lista = lancs.filter(l => l.data.startsWith(String(ano - 1)))
+  if (ano !== new Date().getFullYear()) return resumo(lista)
+  const lim = `${ano - 1}-${hoje().slice(5)}`
+  return resumo(lista.filter(l => l.data <= lim))
+}

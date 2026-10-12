@@ -175,13 +175,15 @@ export function sair() {
 }
 
 let recarregando = false
+let gravacoes = 0 // conta as gravações: dado que chegou de uma busca anterior a uma gravação está velho
 export async function recarregar({ silencioso = true } = {}) {
   if (recarregando) return
   recarregando = true
+  const versao = gravacoes
   try {
     const dados = await Api.carregar()
-    // não troca os dados por baixo de um formulário aberto
-    if (S.folhas === 0 && !S.lanc && !S.encomenda && !S.conta && !S.fornecedor && !S.caderno) {
+    // não troca os dados por baixo de um formulário aberto, nem por dados de antes de uma gravação
+    if (versao === gravacoes && S.folhas === 0 && !S.lanc && !S.encomenda && !S.conta && !S.fornecedor && !S.caderno) {
       aplicar(dados)
       guardarCache()
     }
@@ -192,17 +194,23 @@ export async function recarregar({ silencioso = true } = {}) {
   } finally { recarregando = false }
 }
 
+let ultimoHoje = hoje()
 // Atualiza ao voltar para o app e a cada 2 minutos com ele aberto (para mãe e irmão verem o mesmo)
 if (typeof document !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && S.fase === 'app' && Date.now() - S.carregadoEm > 20000) recarregar()
+    if (document.visibilityState !== 'visible') return
+    // app ficou aberto de um dia para o outro: a tela Hoje passa para o dia novo
+    if (hoje() !== ultimoHoje) { if (S.dia === ultimoHoje) S.dia = hoje(); ultimoHoje = hoje() }
+    if (S.fase === 'app' && Date.now() - S.carregadoEm > 20000) recarregar()
   })
   setInterval(() => { if (document.visibilityState === 'visible' && S.fase === 'app' && !demo) recarregar() }, 120000)
 }
 
 /* ---------- Gravação: um lote de operações vai junto para a planilha ---------- */
 async function gravar(ops) {
+  gravacoes++
   const r = await Api.lote(ops)
+  gravacoes++ // e de novo no fim: busca que começou durante a gravação também é descartada
   const salvos = new Map((r?.salvos || []).map(x => [x.id, x]))
   for (const o of ops) {
     if (o.op === 'excluir') { S[o.tabela] = S[o.tabela].filter(x => x.id !== o.id); continue }

@@ -49,6 +49,8 @@ Tabelas (abas): `lancamentos`, `categorias`, `encomendas`, `contas`, `fornecedor
 Mudou o `Codigo.gs`? Ele não é publicado pelo GitHub: precisa colar no Apps Script e criar **Nova versão** da implantação (ver CONFIGURAR.md).
 
 ## Roteiro de teste
+Testes automáticos de lógica (dinheiro, datas, relatórios e o `Codigo.gs` rodando num Google simulado em `app/testes/google-falso.mjs`): `cd app && node --test testes/`. Rode sempre que mexer em `formato.js`, `analise.js` ou `Codigo.gs`.
+
 Usado pelo `/conferir-site`. **Teste sempre no modo demonstração** (`?demo` ou com `URL_SERVIDOR` vazio): os dados reais são da loja da mãe. Nunca grave nada no servidor real para testar.
 1. Abre sem erros no console nem violação de CSP; `manifest.json` e `sw.js` carregam.
 2. iPhone (390×844): nada vazando para os lados, barra inferior visível, formulários cabem na tela.

@@ -38,12 +38,12 @@
       const r = await Api.lerCaderno(p.base64, data)
       fotoId = r.foto || ''
       aviso = r.aviso || ''
-      const validas = new Set(S.categorias.map(c => c.id))
       itens = (r.itens || []).map(i => linha({
         tipo: i.tipo === 'saida' ? 'saida' : 'entrada',
         valorTxt: i.valor ? String(i.valor).replace('.', ',') : '',
         descricao: i.descricao || '',
-        categoria: validas.has(i.categoria) ? i.categoria : categoriasDoTipo(i.tipo === 'saida' ? 'saida' : 'entrada')[0]?.id,
+        // a categoria sugerida pela IA só vale se for do mesmo tipo da linha
+        categoria: categoriasDoTipo(i.tipo === 'saida' ? 'saida' : 'entrada').some(c => c.id === i.categoria) ? i.categoria : categoriasDoTipo(i.tipo === 'saida' ? 'saida' : 'entrada')[0]?.id,
         forma: FORMAS.includes(i.forma) ? i.forma : '',
         duvida: !!i.duvida,
       }))
@@ -254,10 +254,10 @@
             </div>
             <input class="campo mt-2 h-11" placeholder="Descrição" bind:value={it.descricao} maxlength="120" aria-label="Descrição" />
             <div class="mt-2 grid grid-cols-[1.4fr_1fr] gap-2">
-              <select class="campo h-11 px-3 text-[15px]" bind:value={it.categoria} aria-label="Categoria">
+              <select class="campo h-11 px-3 text-[16px]" bind:value={it.categoria} aria-label="Categoria">
                 {#each categoriasDoTipo(it.tipo) as c}<option value={c.id}>{c.nome}</option>{/each}
               </select>
-              <select class="campo h-11 px-3 text-[15px]" bind:value={it.forma} aria-label="Forma de pagamento">
+              <select class="campo h-11 px-3 text-[16px]" bind:value={it.forma} aria-label="Forma de pagamento">
                 <option value="">Forma…</option>
                 {#each FORMAS.filter(x => it.tipo === 'saida' || x !== 'Boleto') as p}<option value={p}>{p}</option>{/each}
               </select>

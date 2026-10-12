@@ -7,7 +7,7 @@
   import BarrasSimples from '../componentes/BarrasSimples.svelte'
   import Busca from '../componentes/Busca.svelte'
   import { S, nomeCat, corCat } from '../lib/estado.svelte.js'
-  import { resumo, agrupar, serieMeses, porDiaSemana, porDiaDoMes, variacao, lancsDoMes, lancsDoAno, mesComparavel } from '../lib/analise.js'
+  import { resumo, agrupar, serieMeses, porDiaSemana, porDiaDoMes, variacao, lancsDoMes, lancsDoAno, mesComparavel, anoComparavel } from '../lib/analise.js'
   import { mesAtual, somarMeses, nomeMes, nomeMesCurto, fmt, pct, DIAS_CURTO, DIAS, MESES_LONGO } from '../lib/formato.js'
   import { corDaPosicao, FORMAS } from '../lib/dados.js'
 
@@ -23,9 +23,9 @@
   // comparações: período anterior e o mesmo período do ano passado
   // no mês em andamento, compara só até o mesmo dia
   const emAndamento = $derived(modo === 'mes' && mes === mesAtual())
-  const rAnt = $derived(modo === 'mes' ? mesComparavel(S.lancamentos, mes, -1) : resumo(lancsDoAno(S.lancamentos, ano - 1)))
+  const rAnt = $derived(modo === 'mes' ? mesComparavel(S.lancamentos, mes, -1) : anoComparavel(S.lancamentos, ano))
   const rAnoPassado = $derived(modo === 'mes' ? mesComparavel(S.lancamentos, mes, -12) : null)
-  const nomeAnt = $derived(modo === 'mes' ? nomeMes(somarMeses(mes, -1), false) : String(ano - 1))
+  const nomeAnt = $derived(modo === 'mes' ? nomeMes(somarMeses(mes, -1), false) : ano === new Date().getFullYear() ? `${ano - 1} até hoje` : String(ano - 1))
 
   const serie = $derived(serieMeses(S.lancamentos, modo === 'mes' ? mes : `${ano}-12`, 12))
   const cats = tipo => agrupar(lista, tipo, 'categoria').map(x => ({ ...x, nome: nomeCat(x.chave), cor: corCat(x.chave) }))
@@ -69,7 +69,7 @@
     <button class="flex h-10 items-center gap-1.5 rounded-full border border-linha bg-sup px-3.5 text-[14px] font-medium text-txt-2" onclick={() => (busca = {})}><Search size={16} /> Buscar</button>
     <div class="grid grid-cols-2 rounded-full border border-linha bg-sup p-1">
       {#each [['mes', 'Mês'], ['ano', 'Ano']] as [v, rt]}
-        <button class="h-8 rounded-full px-4 text-[13.5px] font-semibold {modo === v ? 'bg-txt text-fundo' : 'text-txt-2'}" onclick={() => (modo = v)}>{rt}</button>
+        <button class="h-9 rounded-full px-4 text-[13.5px] font-semibold {modo === v ? 'bg-txt text-fundo' : 'text-txt-2'}" onclick={() => (modo = v)}>{rt}</button>
       {/each}
     </div>
   </div>

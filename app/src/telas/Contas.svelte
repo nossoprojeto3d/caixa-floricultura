@@ -99,7 +99,7 @@
       </section>
     {/each}
   </div>
-  <button class="mt-6 flex w-full items-center justify-center gap-2 text-[13px] text-txt-3" onclick={() => irPara('mais')}><BellRing size={14} /> Os lembretes chegam no Telegram · configurar em Mais</button>
+  <button class="mt-4 flex h-11 w-full items-center justify-center gap-2 text-[13px] text-txt-3" onclick={() => irPara('mais')}><BellRing size={14} /> Os lembretes chegam no Telegram · configurar em Mais</button>
 {:else}
   {#if !pagas.length}<p class="cartao px-6 py-10 text-center text-[14px] text-txt-3">Nenhuma conta paga ainda.</p>{/if}
   {#if pagas.length}

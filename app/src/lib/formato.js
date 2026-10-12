@@ -65,10 +65,12 @@ export function prazo(s) {
 }
 
 // Converte o texto digitado ("12,50", "1.200", "R$ 30") em número
+// ("1.200" é mil e duzentos; "12.50" com um ponto e dois dígitos é decimal). Nunca negativo.
 export function lerValor(t) {
-  if (typeof t === 'number') return t
-  let s = String(t || '').replace(/[^\d,.-]/g, '')
+  if (typeof t === 'number') return Math.abs(t)
+  let s = String(t || '').replace(/[^\d,.]/g, '')
   if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.')
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '') // pontos de milhar
   const n = parseFloat(s)
   return isFinite(n) ? Math.round(n * 100) / 100 : 0
 }

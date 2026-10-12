@@ -15,10 +15,10 @@
 {#if !lista.length}
   <p class="py-4 text-center text-[13.5px] text-txt-3">Nada neste período.</p>
 {:else}
-  <ul class="space-y-3">
+  <ul class="space-y-1">
     {#each lista as x (x.nome)}
       <li>
-        <button class="w-full text-left {aoTocar && !x.outras ? 'cursor-pointer' : 'cursor-default'}" onclick={() => !x.outras && aoTocar?.(x)}>
+        <button class="w-full rounded-xl py-1.5 text-left {aoTocar && !x.outras ? 'cursor-pointer' : 'cursor-default'}" onclick={() => !x.outras && aoTocar?.(x)}>
           <div class="mb-1 flex items-baseline justify-between gap-3 text-[14px]">
             <span class="flex min-w-0 items-center gap-2"><span class="size-2.5 shrink-0 rounded-full" style="background:{x.cor}"></span><span class="truncate">{x.nome}</span></span>
             <span class="shrink-0"><span class="font-semibold">{fmt(x.valor)}</span> <span class="ml-1 text-[12px] text-txt-3">{Math.round(x.parte * 100)}%</span></span>
