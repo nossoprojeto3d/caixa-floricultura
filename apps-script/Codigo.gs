@@ -86,7 +86,8 @@ function checarCodigo(codigo) {
 
 /* ---------------- Planilha ---------------- */
 
-function planilha() { return SpreadsheetApp.getActiveSpreadsheet(); }
+let planilhaAtiva = null; // só o testeDeVelocidade troca, para usar uma planilha temporária
+function planilha() { return planilhaAtiva || SpreadsheetApp.getActiveSpreadsheet(); }
 
 function aba(tabela) {
   const ss = planilha();
@@ -448,4 +449,52 @@ function configurar() {
   console.log('Gemini: ' + (p.getProperty('GEMINI_API_KEY') ? 'ok' : 'falta GEMINI_API_KEY (sem ela a foto não é lida)'));
   console.log('Telegram: ' + (p.getProperty('TELEGRAM_TOKEN') ? 'ok' : 'falta TELEGRAM_TOKEN (sem ele não há lembretes)'));
   console.log('Fuso horário do projeto: ' + fuso());
+}
+
+/* ---------------- Teste de velocidade (rodar pelo editor, quando quiser) ---------------- */
+
+// Cria uma planilha TEMPORÁRIA (não mexe na de verdade), enche com 2 e 5 anos de movimento
+// no volume da loja, mede leitura e gravação e manda a temporária para a lixeira.
+function testeDeVelocidade() {
+  const resultados = [];
+  [2, 5].forEach(function (anos) {
+    const temp = SpreadsheetApp.create('Ternura · teste de velocidade (pode apagar)');
+    planilhaAtiva = temp;
+    try {
+      Object.keys(TABELAS).forEach(aba);
+      const linhas = { lancamentos: [], fechamentos: [], contas: [], encomendas: [] };
+      const fim = new Date(), d = new Date(); d.setFullYear(fim.getFullYear() - anos);
+      let n = 0;
+      for (; d < fim; d.setDate(d.getDate() + 1)) {
+        const dia = Utilities.formatDate(d, fuso(), 'yyyy-MM-dd'), agora = d.toISOString();
+        if (d.getDay() !== 0) {
+          for (let i = 0; i < 9; i++) linhas.lancamentos.push(['l' + n++, dia, i < 8 ? 'entrada' : 'saida', 50 + (n % 120), 'c-balcao', 'Pix', 'Buquê de rosas vermelhas', 'caderno', '', agora]);
+          if (n % 3 === 0) linhas.encomendas.push(['e' + n, 'Cliente Exemplo', '11999998888', 'Arranjo de mesa com lírios', 180, 90, dia, '14:00', 'entrega', 'Rua das Flores, 123', 'Dona Maria', 'Feliz aniversário!', 'entregue', '', agora]);
+        }
+        linhas.fechamentos.push([dia, dia, '', 600, 300, '', agora]);
+        if (d.getDate() <= 8) linhas.contas.push(['c' + n++, 'Boleto fornecedor', 'f1', 350, dia, 'c-flores', 'paga', dia, 'Boleto', 'nao', '', '', '', agora]);
+      }
+      Object.keys(linhas).forEach(function (t) {
+        if (linhas[t].length) aba(t).getRange(2, 1, linhas[t].length, TABELAS[t].length).setValues(linhas[t]);
+      });
+      SpreadsheetApp.flush();
+
+      let t0 = Date.now();
+      const tudo = carregarTudo();
+      const leitura = Date.now() - t0;
+      const tamanho = JSON.stringify(tudo).length;
+
+      t0 = Date.now();
+      aplicarLote([{ op: 'salvar', tabela: 'lancamentos', registro: { id: 'novo', data: hojeISO(), tipo: 'entrada', valor: 85, categoria: 'c-balcao', forma: 'Pix', descricao: 'teste', origem: 'manual', ref: '', criado: '' } }]);
+      SpreadsheetApp.flush();
+      const gravacao = Date.now() - t0;
+
+      resultados.push(anos + ' anos: ' + tudo.lancamentos.length + ' lançamentos · leitura ' + (leitura / 1000).toFixed(1) + ' s · gravar um lançamento ' + (gravacao / 1000).toFixed(1) + ' s · ' + (tamanho / 1048576).toFixed(1) + ' MB enviados ao app');
+    } finally {
+      planilhaAtiva = null;
+      DriveApp.getFileById(temp.getId()).setTrashed(true);
+    }
+  });
+  resultados.forEach(function (r) { console.log(r); });
+  return resultados;
 }

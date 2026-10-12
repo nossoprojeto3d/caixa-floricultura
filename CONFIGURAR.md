@@ -90,3 +90,7 @@ Só recebe lembretes quem entrar no bot por esse botão, porque o link leva o c�
 Depois de colar uma versão nova do `Codigo.gs`, vá em **Implantar › Gerenciar implantações**, clique no lápis, escolha **Nova versão** e implante. O endereço `/exec` continua o mesmo.
 
 Se mudar as colunas de alguma tabela, mude nos dois lugares: `TABELAS` no `Codigo.gs` e em `app/src/lib/dados.js`.
+
+## Teste de velocidade (opcional)
+
+Para saber quanto a planilha aguenta na sua conta: no editor do Apps Script, escolha a função **`testeDeVelocidade`** e clique em **Executar**. Ela cria uma planilha temporária e separada (a de verdade não é tocada), enche com 2 e com 5 anos de movimento no volume da loja, mede o tempo de leitura e de gravação e manda a temporária para a lixeira. O resultado aparece no registro de execução. Leva de 1 a 3 minutos.

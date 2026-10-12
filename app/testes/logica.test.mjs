@@ -155,3 +155,15 @@ test('ano em andamento compara com o ano anterior só até a mesma data', () => 
   const r = A.anoComparavel([L(antes, 'entrada', 10), ...(depois.startsWith(String(ano - 1)) ? [L(depois, 'entrada', 99)] : [])], ano)
   assert.equal(r.entradas, 10)
 })
+
+test('testeDeVelocidade usa planilha temporária, não toca a de verdade e joga a temporária fora', () => {
+  const s = novoServidor()
+  const antes = s.lerTabela('lancamentos').length
+  const r = s.testeDeVelocidade()
+  assert.equal(r.length, 2)
+  assert.match(r[0], /^2 anos: \d+ lançamentos/)
+  assert.equal(s.lerTabela('lancamentos').length, antes, 'planilha de verdade intacta')
+  assert.deepEqual([...s.lixeira], ['temp0', 'temp1'])
+  const lancs2anos = s.temporarias[0].abas.get('Lançamentos').dados.length - 1
+  assert.ok(lancs2anos > 5000 && lancs2anos < 7000, `2 anos ≈ 5.600 lançamentos (veio ${lancs2anos})`)
+})

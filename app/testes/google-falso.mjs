@@ -45,6 +45,12 @@ export function carregarServidor({ props = {} } = {}) {
   const propriedades = { ...props }
   const cache = new Map()
   const telegram = []
+  const lixeira = []
+  const novaPlanilha = (id) => {
+    const abasP = new Map()
+    return { id, abas: abasP, getId: () => id, getSheetByName: n => abasP.get(n) || null, insertSheet: n => { const a = new Aba(n); abasP.set(n, a); return a }, getSheets: () => [...abasP.values()], deleteSheet: a => abasP.delete(a.nome), getUrl: () => 'x' }
+  }
+  const temporarias = []
   const planilha = {
     getSheetByName: n => abas.get(n) || null,
     insertSheet: n => { const a = new Aba(n); abas.set(n, a); return a },
@@ -55,7 +61,7 @@ export function carregarServidor({ props = {} } = {}) {
   const pad = n => String(n).padStart(2, '0')
   const ctx = {
     console: { log() {}, warn() {}, error() {} },
-    SpreadsheetApp: { getActiveSpreadsheet: () => planilha },
+    SpreadsheetApp: { getActiveSpreadsheet: () => planilha, create: () => { const p = novaPlanilha('temp' + temporarias.length); temporarias.push(p); return p }, flush() {} },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => propriedades[k] ?? null, setProperty: (k, v) => { propriedades[k] = v } }) },
     CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v) }) },
     LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
@@ -74,15 +80,15 @@ export function carregarServidor({ props = {} } = {}) {
         return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ ok: true, result: r }) }
       },
     },
-    DriveApp: { getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
+    DriveApp: { getFileById: id => ({ setTrashed: v => v && lixeira.push(id) }), getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
     ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyDays: () => ({ atHour: () => ({ nearMinute: () => ({ create() {} }) }) }) }) }) },
   }
   vm.createContext(ctx)
   const codigo = readFileSync(new URL('../../apps-script/Codigo.gs', import.meta.url), 'utf8')
-  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, TABELAS };', ctx)
+  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, testeDeVelocidade, TABELAS };', ctx)
   const s = ctx.__s
   // chama como o app chama: POST com JSON no corpo
   const post = (acao, dados = {}, codigoAcesso = propriedades.CODIGO_ACESSO) =>
     JSON.parse(s.doPost({ postData: { contents: JSON.stringify({ acao, codigo: codigoAcesso, ...dados }) } }).texto)
-  return { ...s, post, abas, propriedades, telegram, cache }
+  return { ...s, post, abas, propriedades, telegram, cache, lixeira, temporarias }
 }
