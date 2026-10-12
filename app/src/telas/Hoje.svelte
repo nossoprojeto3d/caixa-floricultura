@@ -5,7 +5,7 @@
   import ItemLanc from '../componentes/ItemLanc.svelte'
   import Flor from '../componentes/Flor.svelte'
   import Folha from '../componentes/Folha.svelte'
-  import { S, lancsDoDia, fechamento, totalTipo, abrirLanc, editarLanc, contasUrgentes, encomendasAtivas, irPara, reabrirDia, confirmar, tratarErro, avisar } from '../lib/estado.svelte.js'
+  import { S, lancsDoDia, fechamento, diasSemFechar, totalTipo, abrirLanc, editarLanc, contasUrgentes, encomendasAtivas, irPara, reabrirDia, confirmar, tratarErro, avisar } from '../lib/estado.svelte.js'
   import { Api } from '../lib/api.js'
   import { hoje, ontem, somarDias, dataBonita, diasAte, fmt, mesAtual, somarMeses, nomeMes, mesDe, deISO, DIAS } from '../lib/formato.js'
   import { resumo, lancsDoMes } from '../lib/analise.js'
@@ -19,7 +19,9 @@
   const urgentes = $derived(contasUrgentes())
   const atrasadas = $derived(urgentes.filter(c => diasAte(c.vencimento) < 0))
   const encProximas = $derived(encomendasAtivas().filter(e => diasAte(e.entrega_data) <= 1))
-  const ontemAberto = $derived(ehHoje && !fechamento(ontem()))
+  const semFechar = $derived(diasSemFechar())
+  let listaPendentes = $state(false)
+  function abrirPendentes() { if (semFechar.length === 1) S.dia = semFechar[0]; else listaPendentes = true }
 
   // Mês do dia aberto, comparado com o mês anterior inteiro
   const mes = $derived(mesDe(S.dia))
@@ -54,7 +56,7 @@
 </header>
 
 <!-- Avisos -->
-{#if atrasadas.length || urgentes.length || encProximas.length || ontemAberto}
+{#if atrasadas.length || urgentes.length || encProximas.length || semFechar.length}
   <div class="-mx-4 mb-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] lg:mx-0 lg:flex-wrap lg:px-0">
     {#if urgentes.length}
       <button class="flex shrink-0 items-center gap-3 rounded-[20px] border py-3 pr-4 pl-3 text-left {atrasadas.length ? 'border-sai/30 bg-sai-fundo' : 'border-alerta/30 bg-alerta-fundo'}" onclick={() => irPara('contas')}>
@@ -74,12 +76,12 @@
         </span>
       </button>
     {/if}
-    {#if ontemAberto}
-      <button class="flex shrink-0 items-center gap-3 rounded-[20px] border border-linha bg-sup py-3 pr-4 pl-3 text-left" onclick={() => (S.dia = ontem())}>
+    {#if semFechar.length}
+      <button class="flex shrink-0 items-center gap-3 rounded-[20px] border border-linha bg-sup py-3 pr-4 pl-3 text-left" onclick={abrirPendentes}>
         <span class="grid size-10 place-items-center rounded-full bg-sup-2 text-txt-2"><CalendarClock size={19} /></span>
         <span>
-          <span class="block text-[14.5px] font-semibold">Ontem não foi fechado</span>
-          <span class="block text-[12.5px] text-txt-2">Toque para fechar</span>
+          <span class="block text-[14.5px] font-semibold">{semFechar.length === 1 ? (semFechar[0] === ontem() ? 'Ontem não foi fechado' : `${dataBonita(semFechar[0])} sem fechar`) : `${semFechar.length} dias sem fechar`}</span>
+          <span class="block text-[12.5px] text-txt-2">{semFechar.length === 1 ? 'Toque para fechar' : 'Toque para ver quais'}</span>
         </span>
       </button>
     {/if}
@@ -165,5 +167,23 @@
     {:else}
       <img src={foto.url} alt="Foto do caderno" class="w-full rounded-2xl" />
     {/if}
+  </Folha>
+{/if}
+
+{#if listaPendentes}
+  <Folha titulo="Dias sem fechar" aoFechar={() => (listaPendentes = false)}>
+    <p class="mb-3 text-[14px] text-txt-2">Feche do mais antigo para o mais novo. Ao terminar um, eu já ofereço o próximo.</p>
+    <div class="cartao divide-y divide-linha/70 overflow-hidden">
+      {#each semFechar as d (d)}
+        {@const l = lancsDoDia(d)}
+        <div class="flex items-center gap-3 px-4 py-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-[15px] font-semibold first-letter:uppercase">{dataBonita(d)}</p>
+            <p class="text-[13px] text-txt-3">{l.length ? `${l.length} lançamento${l.length > 1 ? 's' : ''} · entrou ${fmt(totalTipo(l, 'entrada'))}` : 'Nada lançado'}</p>
+          </div>
+          <button class="h-10 shrink-0 rounded-full bg-destaque px-4 text-[14px] font-semibold text-white active:scale-95" onclick={() => { listaPendentes = false; S.dia = d; S.caderno = { data: d } }}>Fechar</button>
+        </div>
+      {/each}
+    </div>
   </Folha>
 {/if}

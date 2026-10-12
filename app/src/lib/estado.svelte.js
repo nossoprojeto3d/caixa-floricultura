@@ -2,7 +2,7 @@
 // (pagar conta, fechar o dia, encomendas).
 import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
-import { cent, hoje, novoId, somarMeses, deISO, iso, diasAte } from './formato.js'
+import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from './formato.js'
 
 export const VERSAO = '1.0.1'
 const CHAVE_CACHE = 'ternura_cache'
@@ -58,6 +58,20 @@ export const corCat = id => cat(id)?.cor || '#a4949a'
 export const categoriasDoTipo = tipo => S.categorias.filter(c => c.tipo === tipo)
 export const lancsDoDia = d => S.lancamentos.filter(l => l.data === d)
 export const fechamento = d => S.fechamentos.find(f => f.data === d)
+
+// Dias que ficaram sem fechar, do mais antigo para o mais novo (até ontem).
+// Começa no primeiro dia de uso do app e olha no máximo 30 dias para trás.
+export function diasSemFechar() {
+  const datas = [...S.fechamentos.map(f => f.data), ...S.lancamentos.map(l => l.data)]
+  if (!datas.length) return []
+  const fechados = new Set(S.fechamentos.map(f => f.data))
+  const limite = somarDias(hoje(), -30)
+  let d = datas.reduce((m, x) => (x < m ? x : m))
+  if (d < limite) d = limite
+  const fim = somarDias(hoje(), -1), lista = []
+  for (; d <= fim; d = somarDias(d, 1)) if (!fechados.has(d)) lista.push(d)
+  return lista
+}
 export const totalTipo = (lista, tipo) => lista.reduce((a, l) => a + (l.tipo === tipo ? cent(l.valor) : 0), 0) / 100
 
 export const contasAbertas = () => S.contas.filter(c => c.status !== 'paga').sort((a, b) => a.vencimento.localeCompare(b.vencimento))

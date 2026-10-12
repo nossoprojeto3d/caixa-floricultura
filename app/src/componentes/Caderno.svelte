@@ -1,9 +1,9 @@
 <script>
   // Fechar o dia: foto do caderno → IA lê → ela confere/corrige → salva tudo no caixa
-  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles, ListChecks, ChevronRight, CircleCheck } from '@lucide/svelte'
+  import { X, Camera, Image as Imagem, Keyboard, Plus, Trash2, Minus, CircleAlert, ZoomIn, ZoomOut, Check, Sparkles, ListChecks, ChevronRight, CircleCheck, Store, CalendarClock } from '@lucide/svelte'
   import { fade, fly, slide } from 'svelte/transition'
   import Dinheiro from './Dinheiro.svelte'
-  import { S, categoriasDoTipo, lancsDoDia, fechamento, fecharDia, avisar, tratarErro, confirmar, nomeCat, demo } from '../lib/estado.svelte.js'
+  import { S, categoriasDoTipo, lancsDoDia, fechamento, fecharDia, diasSemFechar, avisar, tratarErro, confirmar, nomeCat, demo } from '../lib/estado.svelte.js'
   import { Api } from '../lib/api.js'
   import { FORMAS } from '../lib/dados.js'
   import { dataBonita, lerValor, cent, fmt, novoId } from '../lib/formato.js'
@@ -13,7 +13,8 @@
   const data = S.caderno.data
   const ja = $derived(lancsDoDia(data))
 
-  let etapa = $state('inicio') // 'inicio' | 'lendo' | 'revisar'
+  let etapa = $state('inicio') // 'inicio' | 'lendo' | 'revisar' | 'feito'
+  let proximo = $state('') // próximo dia que ficou sem fechar
   let foto = $state(null) // dataURL para mostrar
   let fotoId = $state('')
   let aviso = $state('')
@@ -107,8 +108,22 @@
     try {
       await fecharDia(data, validos.map(i => ({ ...i, valor: lerValor(i.valorTxt) })), { foto: fotoId, obs })
       avisar(validos.length ? `Dia fechado · ${validos.length} lançamento${validos.length > 1 ? 's' : ''}` : 'Dia fechado')
-      S.caderno = null
+      terminou()
     } catch (e) { tratarErro(e) } finally { enviando = false }
+  }
+
+  // Loja não abriu: fecha o dia com zero, sem perguntar de novo
+  async function lojaFechada() {
+    if (enviando) return
+    enviando = true
+    try { await fecharDia(data, [], { obs: 'Loja fechada' }); avisar('Dia fechado · loja fechada'); terminou() }
+    catch (e) { tratarErro(e) } finally { enviando = false }
+  }
+
+  // Se ainda tem dia sem fechar, oferece fechar o próximo em seguida
+  function terminou() {
+    const resta = diasSemFechar().filter(d => d !== data)
+    if (resta.length) { proximo = resta[0]; etapa = 'feito' } else S.caderno = null
   }
 
   // Opções da primeira tela; com algo já lançado no dia, fechar com isso vem primeiro
@@ -117,6 +132,7 @@
     { id: 'foto', icone: Camera, nome: 'Tirar foto do caderno', sub: 'Eu leio e você só confere', acao: () => inputCamera.click() },
     { id: 'galeria', icone: Imagem, nome: 'Escolher da galeria', sub: 'Uma foto que já está no celular', acao: () => inputGaleria.click() },
     { id: 'digitar', icone: Keyboard, nome: 'Digitar sem foto', sub: 'Lançar à mão agora', acao: semFoto },
+    ...(ja.length ? [] : [{ id: 'fechada', icone: Store, nome: 'A loja não abriu neste dia', sub: 'Fecha o dia com zero (domingo, feriado…)', acao: lojaFechada }]),
   ])
 
   async function fechar() {
@@ -130,7 +146,7 @@
     <button class="grid size-10 shrink-0 place-items-center rounded-full text-txt-2 hover:bg-sup-2" aria-label="Fechar" onclick={fechar}><X size={22} /></button>
     <div class="min-w-0 flex-1">
       <p class="titulo text-[20px] leading-tight font-semibold">Fechar o dia</p>
-      <p class="text-[13px] text-txt-3">{dataBonita(data)}{fechamento(data) ? ' · já fechado antes, o que entrar aqui soma' : ''}</p>
+      <p class="text-[13px] text-txt-3">{dataBonita(data)}{fechamento(data) && etapa !== 'feito' ? ' · já fechado antes, o que entrar aqui soma' : ''}</p>
     </div>
     {#if foto && etapa === 'revisar'}
       <button class="size-11 shrink-0 overflow-hidden rounded-xl border border-linha" aria-label="Ver a foto do caderno" onclick={() => (verFoto = true)}>
@@ -157,6 +173,21 @@
       <p class="mt-4 px-2 text-center text-[12.5px] leading-relaxed text-txt-3">Na foto: a página do dia inteira, bem de cima e com luz.</p>
       <input bind:this={inputCamera} type="file" accept="image/*" capture="environment" class="hidden" onchange={escolheuFoto} />
       <input bind:this={inputGaleria} type="file" accept="image/*" class="hidden" onchange={escolheuFoto} />
+
+    {:else if etapa === 'feito'}
+      {@const resta = diasSemFechar()}
+      <div class="mt-6 flex flex-col items-center text-center" in:fade>
+        <div class="grid size-16 place-items-center rounded-full bg-ent-fundo text-ent"><CircleCheck size={32} strokeWidth={1.8} /></div>
+        <p class="titulo mt-4 text-[22px] font-semibold">Dia fechado</p>
+        <p class="text-[14px] text-txt-3 first-letter:uppercase">{dataBonita(data)}</p>
+        <p class="mt-4 max-w-[300px] text-[14.5px] leading-relaxed text-txt-2">
+          {resta.length === 1 ? 'Ainda falta fechar 1 dia:' : `Ainda faltam ${resta.length} dias para fechar. O mais antigo:`}
+        </p>
+        <button class="mt-6 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-destaque text-[16px] font-semibold text-white active:scale-[0.98]" onclick={() => (S.caderno = { data: proximo })}>
+          <CalendarClock size={20} /> Fechar {dataBonita(proximo).toLowerCase()}
+        </button>
+        <button class="mt-2 h-12 w-full rounded-2xl text-[15px] font-medium text-txt-2 hover:bg-sup-2" onclick={() => (S.caderno = null)}>Deixar para depois</button>
+      </div>
 
     {:else if etapa === 'lendo'}
       <div class="mt-2 flex flex-col items-center" in:fade>

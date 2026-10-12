@@ -78,12 +78,12 @@
       <div class="trava-rolagem fixed inset-0 z-[52]">
         <button class="absolute inset-0 bg-[#1d2a22]/40" aria-label="Fechar" onclick={() => chave === 'lanc' && (S.lanc = null)} transition:fade={{ duration: 180 }}></button>
         <div class="absolute inset-y-3 right-3 w-[440px] overflow-hidden rounded-[28px] bg-fundo shadow-2xl" transition:fly={{ x: 460, duration: 300, easing: cubicOut }}>
-          <Comp modo="painel" />
+          {#key chave === 'caderno' ? S.caderno?.data : 0}<Comp modo="painel" />{/key}
         </div>
       </div>
     {:else}
       <div class="trava-rolagem fixed inset-0 z-[52] bg-fundo" transition:fly={{ y: 800, duration: 340, easing: cubicOut, opacity: 1 }}>
-        <Comp modo="tela" />
+        {#key chave === 'caderno' ? S.caderno?.data : 0}<Comp modo="tela" />{/key}
       </div>
     {/if}
   {/if}
