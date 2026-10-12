@@ -132,6 +132,7 @@ export const Demo = {
       aviso: 'Modo demonstração: estas linhas são de exemplo, não vieram da sua foto.',
     }
   },
+  async versao() { return 'demo' },
   async foto(id) { await espera(200); return fotos.get(id) || '' },
   async testarTelegram() { await espera(500); throw new Error('No modo demonstração o Telegram não está ligado.') },
   async info() { await espera(200); return { planilha: '', telegram: { configurado: false, pessoas: 0 }, ia: false } },

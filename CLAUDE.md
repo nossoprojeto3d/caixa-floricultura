@@ -39,6 +39,7 @@ Tabelas (abas): `lancamentos`, `categorias`, `encomendas`, `contas`, `fornecedor
 - `lancamentos.origem`: `manual`, `caderno`, `conta` (pagamento de conta, `ref` = id da conta) ou `encomenda` (`ref` = id da encomenda).
 - `fechamentos`: um por dia fechado (`id` = data). Os totais gravados são só uma referência para a planilha; o app sempre recalcula pelos lançamentos.
 - Excluir um lançamento que veio de conta reabre a conta.
+- **Sincronização:** com o app aberto, a cada 2 min ele só pergunta `versao` ao servidor (`VERSAO_DADOS`, muda a cada lote) e baixa tudo só se mudou; ao voltar para o app baixa tudo. Busca que começou antes de uma gravação é descartada (`gravacoes` no estado). Edição feita direto na planilha não muda a versão: aparece quando o app é reaberto.
 - **Dias sem fechar:** `diasSemFechar()` (estado) lista os dias até ontem sem fechamento, a partir do primeiro dia de uso e no máximo 30 dias para trás. A tela Hoje avisa ("N dias sem fechar" abre a lista); depois de fechar um, o `Caderno` oferece o próximo pendente. Dia sem lançamento tem a opção "A loja não abriu neste dia" (fecha com zero, obs "Loja fechada").
 - **Fechar o dia não duplica, mas pergunta:** na revisão do caderno, linha com o mesmo tipo e valor de um lançamento já existente no dia (casamento um para um) fica amarela com "É o mesmo lançamento?" e os botões "Sim, já está lançado" (não salva) / "Não, lançar também". Nada é decidido sozinho: com pergunta sem resposta, o app não salva. Regra em `repetidas`/`pendentes` no `Caderno.svelte`.
 

@@ -51,6 +51,7 @@ const Remoto = {
   foto: id => chamar('foto', { id }, 60000),
   testarTelegram: () => chamar('testarTelegram'),
   info: () => chamar('info'),
+  versao: () => chamar('versao', {}, 15000),
 }
 
 export const Api = modoDemo ? Demo : Remoto

@@ -6,6 +6,7 @@ import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from '
 
 export const VERSAO = '1.0.1'
 const CHAVE_CACHE = 'ternura_cache'
+let versaoDados = '' // muda no servidor a cada gravação
 
 export const S = $state({
   fase: 'carregando', // 'carregando' | 'codigo' | 'app'
@@ -101,6 +102,7 @@ function aplicar(dados) {
   S.contas = (dados.contas || []).map(normal)
   S.fornecedores = (dados.fornecedores || []).map(normal)
   S.fechamentos = (dados.fechamentos || []).map(normal)
+  versaoDados = dados.versao ?? versaoDados
   S.carregadoEm = Date.now()
 }
 
@@ -203,7 +205,11 @@ if (typeof document !== 'undefined') {
     if (hoje() !== ultimoHoje) { if (S.dia === ultimoHoje) S.dia = hoje(); ultimoHoje = hoje() }
     if (S.fase === 'app' && Date.now() - S.carregadoEm > 20000) recarregar()
   })
-  setInterval(() => { if (document.visibilityState === 'visible' && S.fase === 'app' && !demo) recarregar() }, 120000)
+  // a cada 2 minutos só pergunta a versão (resposta minúscula); baixa tudo só se alguém gravou algo
+  setInterval(async () => {
+    if (document.visibilityState !== 'visible' || S.fase !== 'app' || demo) return
+    try { if ((await Api.versao()) !== versaoDados) recarregar() } catch {}
+  }, 120000)
 }
 
 /* ---------- Gravação: um lote de operações vai junto para a planilha ---------- */

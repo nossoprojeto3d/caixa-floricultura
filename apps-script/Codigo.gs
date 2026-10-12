@@ -62,6 +62,7 @@ function doPost(e) {
       case 'foto': dados = lerFoto(req.id); break;
       case 'testarTelegram': dados = testarTelegram(); break;
       case 'info': dados = info(); break;
+      case 'versao': dados = props().getProperty('VERSAO_DADOS') || ''; break;
       default: throw Erro('Ação desconhecida.');
     }
     return resposta({ ok: true, dados: dados });
@@ -129,6 +130,7 @@ function lerTabela(tabela) {
 function carregarTudo() {
   const r = {};
   Object.keys(TABELAS).forEach(function (t) { r[t] = lerTabela(t); });
+  r.versao = props().getProperty('VERSAO_DADOS') || '';
   return r;
 }
 
@@ -205,7 +207,10 @@ function aplicarLote(ops) {
       }
       Object.keys(apagar).map(Number).sort(function (a, b) { return b - a; }).forEach(function (l) { sh.deleteRow(l); });
     });
-    return { salvos: salvos };
+    // o app pergunta só por este número a cada 2 minutos e baixa tudo só quando ele muda
+    const versao = Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+    if (!planilhaAtiva) props().setProperty('VERSAO_DADOS', versao);
+    return { salvos: salvos, versao: versao };
   } finally {
     trava.releaseLock();
   }

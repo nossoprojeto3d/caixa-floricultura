@@ -167,3 +167,12 @@ test('testeDeVelocidade usa planilha temporária, não toca a de verdade e joga 
   const lancs2anos = s.temporarias[0].abas.get('Lançamentos').dados.length - 1
   assert.ok(lancs2anos > 5000 && lancs2anos < 7000, `2 anos ≈ 5.600 lançamentos (veio ${lancs2anos})`)
 })
+
+test('versão dos dados muda a cada gravação e vem junto no carregar', () => {
+  const s = novoServidor()
+  const v1 = s.post('versao').dados
+  s.post('lote', { ops: [{ op: 'salvar', tabela: 'fornecedores', registro: { id: 'v', nome: 'X', telefone: '', produtos: '', pix: '', obs: '', criado: '' } }] })
+  const v2 = s.post('versao').dados
+  assert.notEqual(v1, v2)
+  assert.equal(s.post('carregar').dados.versao, v2)
+})
