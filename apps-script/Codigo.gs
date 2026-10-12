@@ -21,9 +21,11 @@ const TABELAS = {
   contas: ['id', 'descricao', 'fornecedor', 'valor', 'vencimento', 'categoria', 'status', 'pago_em', 'forma', 'repetir', 'codigo', 'obs', 'lanc', 'criado'],
   fornecedores: ['id', 'nome', 'telefone', 'produtos', 'pix', 'obs', 'criado'],
   fechamentos: ['id', 'data', 'foto', 'entradas', 'saidas', 'obs', 'criado'],
+  // totais por mês dos anos arquivados (tipo 'dias' = quantos dias tiveram venda no mês)
+  resumos: ['id', 'mes', 'tipo', 'categoria', 'forma', 'valor', 'qtd', 'criado'],
 };
-const NOMES_ABAS = { lancamentos: 'Lançamentos', categorias: 'Categorias', encomendas: 'Encomendas', contas: 'Contas a pagar', fornecedores: 'Fornecedores', fechamentos: 'Fechamentos' };
-const NUMEROS = ['valor', 'sinal', 'entradas', 'saidas', 'ordem'];
+const NOMES_ABAS = { lancamentos: 'Lançamentos', categorias: 'Categorias', encomendas: 'Encomendas', contas: 'Contas a pagar', fornecedores: 'Fornecedores', fechamentos: 'Fechamentos', resumos: 'Resumos' };
+const NUMEROS = ['valor', 'sinal', 'entradas', 'saidas', 'ordem', 'qtd'];
 const DATAS = ['data', 'entrega_data', 'vencimento', 'pago_em'];
 const FORMAS = ['Dinheiro', 'Pix', 'Débito', 'Crédito', 'Boleto', 'Outro'];
 const PASTA_FOTOS = 'Ternura Flores · Fotos do caderno';
@@ -152,6 +154,7 @@ function limpar(tabela, reg) {
   });
   if (!o.id || o.id.length > 60) throw Erro('Registro sem id.');
   if (tabela === 'lancamentos' && ['entrada', 'saida'].indexOf(o.tipo) < 0) throw Erro('Tipo inválido.');
+  if (tabela === 'resumos') throw Erro('Resumos são gravados só pelo arquivamento.');
   return o;
 }
 
@@ -447,6 +450,9 @@ function configurar() {
   // gatilho diário às 8h para os lembretes
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'lembreteDiario') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('lembreteDiario').timeBased().everyDays(1).atHour(8).nearMinute(0).create();
+  // arquivamento: roda todo dia 2 de madrugada, mas só faz algo quando um ano passa dos 2 anos de detalhe
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'arquivarAntigos') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('arquivarAntigos').timeBased().onMonthDay(2).atHour(3).create();
 
   const p = props();
   console.log('Pronto!');
@@ -502,4 +508,114 @@ function testeDeVelocidade() {
   });
   resultados.forEach(function (r) { console.log(r); });
   return resultados;
+}
+
+/* ---------------- Arquivo dos anos antigos ---------------- */
+
+// Mantém com detalhe os 2 anos anteriores completos + o ano atual. O que for mais antigo
+// vai para a planilha "Ternura Flores · Arquivo" (uma aba por tabela e ano), sem apagar nada,
+// e os lançamentos viram totais por mês na aba Resumos, que os relatórios usam para anos antigos.
+// Só tira da planilha principal depois de conferir que a cópia no arquivo está completa.
+const ARQUIVAVEIS = {
+  lancamentos: function (o, corte) { return o.data && o.data < corte; },
+  fechamentos: function (o, corte) { return o.data && o.data < corte; },
+  contas: function (o, corte) { return o.status === 'paga' && o.pago_em && o.pago_em < corte; },
+  encomendas: function (o, corte) { return (o.status === 'entregue' || o.status === 'cancelada') && o.entrega_data && o.entrega_data < corte; },
+};
+
+function planilhaArquivo() {
+  const id = props().getProperty('ARQUIVO_ID');
+  if (id) { try { return SpreadsheetApp.openById(id); } catch (_) {} }
+  const p = SpreadsheetApp.create('Ternura Flores · Arquivo');
+  props().setProperty('ARQUIVO_ID', p.getId());
+  return p;
+}
+
+function arquivarAntigos() {
+  const corte = (Number(hojeISO().slice(0, 4)) - 2) + '-01-01';
+  const trava = LockService.getScriptLock();
+  if (!trava.tryLock(60000)) throw Erro('A planilha está ocupada. Tente de novo.');
+  const relatorio = [];
+  try {
+    const tz = fuso();
+    Object.keys(ARQUIVAVEIS).forEach(function (t) {
+      const sh = aba(t), cols = TABELAS[t];
+      const n = sh.getLastRow();
+      if (n < 2) return;
+      const brutas = sh.getRange(2, 1, n - 1, cols.length).getValues();
+      const objetos = lerTabela(t); // mesmas linhas, já normalizadas (sem as vazias)
+      const porId = {};
+      objetos.forEach(function (o) { porId[o.id] = o; });
+      const sai = [], fica = [], saiObj = [];
+      brutas.forEach(function (r) {
+        const o = porId[String(r[0])];
+        if (o && ARQUIVAVEIS[t](o, corte)) { sai.push(r); saiObj.push(o); } else if (r[0] !== '') fica.push(r);
+      });
+      if (!sai.length) return;
+
+      // 1) copia para o arquivo, separando por ano
+      const arq = planilhaArquivo();
+      const porAno = {};
+      saiObj.forEach(function (o, i) {
+        const ano = String(o.data || o.pago_em || o.entrega_data).slice(0, 4);
+        (porAno[ano] = porAno[ano] || []).push(sai[i]);
+      });
+      Object.keys(porAno).forEach(function (ano) {
+        const nome = NOMES_ABAS[t] + ' ' + ano;
+        let a = arq.getSheetByName(nome);
+        if (!a) {
+          a = arq.insertSheet(nome);
+          a.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold');
+          a.setFrozenRows(1);
+        }
+        const antes = a.getLastRow();
+        a.getRange(antes + 1, 1, porAno[ano].length, cols.length).setValues(porAno[ano]);
+        SpreadsheetApp.flush();
+        // 2) confere a cópia antes de tirar qualquer coisa da principal
+        if (a.getLastRow() !== antes + porAno[ano].length) throw Erro('A cópia para o arquivo não conferiu (' + nome + '). Nada foi removido.');
+      });
+
+      // 3) lançamentos viram totais por mês na aba Resumos
+      if (t === 'lancamentos') somarNosResumos(saiObj);
+
+      // 4) só agora reescreve a principal com o que fica
+      if (fica.length) sh.getRange(2, 1, fica.length, cols.length).setValues(fica);
+      sh.deleteRows(fica.length + 2, n - 1 - fica.length);
+      relatorio.push(NOMES_ABAS[t] + ': ' + sai.length + ' arquivados');
+    });
+    if (relatorio.length) props().setProperty('VERSAO_DADOS', Date.now() + '-arq');
+  } finally {
+    trava.releaseLock();
+  }
+  console.log(relatorio.length ? 'Arquivado (antes de ' + corte + '): ' + relatorio.join(' · ') : 'Nada para arquivar (tudo é de ' + corte.slice(0, 4) + ' para cá).');
+  return relatorio;
+}
+
+// Soma os lançamentos arquivados nos totais por mês × tipo × categoria × forma
+function somarNosResumos(lancs) {
+  const atual = {};
+  lerTabela('resumos').forEach(function (r) { atual[r.id] = r; });
+  const diasPorMes = {};
+  lancs.forEach(function (l) {
+    const mes = l.data.slice(0, 7);
+    const id = [mes, l.tipo, l.categoria, l.forma].join('|');
+    const r = atual[id] || (atual[id] = { id: id, mes: mes, tipo: l.tipo, categoria: l.categoria, forma: l.forma, valor: 0, qtd: 0, criado: '' });
+    r.valor = Math.round((r.valor + Number(l.valor)) * 100) / 100;
+    r.qtd += 1;
+    if (l.tipo === 'entrada') (diasPorMes[mes] = diasPorMes[mes] || {})[l.data] = true;
+  });
+  Object.keys(diasPorMes).forEach(function (mes) {
+    const id = mes + '|dias';
+    const r = atual[id] || (atual[id] = { id: id, mes: mes, tipo: 'dias', categoria: '', forma: '', valor: 0, qtd: 0, criado: '' });
+    r.valor += Object.keys(diasPorMes[mes]).length;
+  });
+  const cols = TABELAS.resumos, sh = aba('resumos'), agora = new Date().toISOString();
+  const linhas = Object.keys(atual).sort().map(function (id) {
+    const r = atual[id];
+    if (!r.criado) r.criado = agora;
+    return cols.map(function (c) { return celula(c, r[c]); });
+  });
+  const n = sh.getLastRow();
+  if (n > 1) sh.getRange(2, 1, n - 1, cols.length).clearContent();
+  if (linhas.length) sh.getRange(2, 1, linhas.length, cols.length).setValues(linhas);
 }

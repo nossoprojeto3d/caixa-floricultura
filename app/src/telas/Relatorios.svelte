@@ -6,7 +6,7 @@
   import BarrasLista from '../componentes/BarrasLista.svelte'
   import BarrasSimples from '../componentes/BarrasSimples.svelte'
   import Busca from '../componentes/Busca.svelte'
-  import { S, nomeCat, corCat } from '../lib/estado.svelte.js'
+  import { S, nomeCat, corCat, historico, mesArquivado, anoArquivado } from '../lib/estado.svelte.js'
   import { resumo, agrupar, serieMeses, porDiaSemana, porDiaDoMes, variacao, lancsDoMes, lancsDoAno, mesComparavel, anoComparavel } from '../lib/analise.js'
   import { mesAtual, somarMeses, nomeMes, nomeMesCurto, fmt, pct, DIAS_CURTO, DIAS, MESES_LONGO } from '../lib/formato.js'
   import { corDaPosicao, FORMAS } from '../lib/dados.js'
@@ -17,31 +17,36 @@
   let busca = $state(null) // filtros iniciais da busca aberta
   let tabela = $state(false)
 
-  const primeiro = $derived(S.lancamentos.reduce((m, l) => (l.data < m ? l.data : m), mesAtual() + '-01').slice(0, 7))
-  const lista = $derived(modo === 'mes' ? lancsDoMes(S.lancamentos, mes) : lancsDoAno(S.lancamentos, ano))
+  // lançamentos + totais dos anos arquivados (calculado uma vez só)
+  const base = $derived(historico())
+  const primeiro = $derived(base.reduce((m, l) => (l.data < m ? l.data : m), mesAtual() + '-01').slice(0, 7))
+  const lista = $derived(modo === 'mes' ? lancsDoMes(base, mes) : lancsDoAno(base, ano))
+  // dia a dia e dias da semana precisam do detalhe: anos arquivados só têm o total do mês
+  const arquivado = $derived(modo === 'mes' ? mesArquivado(mes) : anoArquivado(ano))
+  const detalhe = $derived(lista.filter(l => !l.resumo))
   const r = $derived(resumo(lista))
   // comparações: período anterior e o mesmo período do ano passado
   // no mês em andamento, compara só até o mesmo dia
   const emAndamento = $derived(modo === 'mes' && mes === mesAtual())
-  const rAnt = $derived(modo === 'mes' ? mesComparavel(S.lancamentos, mes, -1) : anoComparavel(S.lancamentos, ano))
-  const rAnoPassado = $derived(modo === 'mes' ? mesComparavel(S.lancamentos, mes, -12) : null)
+  const rAnt = $derived(modo === 'mes' ? mesComparavel(base, mes, -1) : anoComparavel(base, ano))
+  const rAnoPassado = $derived(modo === 'mes' ? mesComparavel(base, mes, -12) : null)
   const nomeAnt = $derived(modo === 'mes' ? nomeMes(somarMeses(mes, -1), false) : ano === new Date().getFullYear() ? `${ano - 1} até hoje` : String(ano - 1))
 
-  const serie = $derived(serieMeses(S.lancamentos, modo === 'mes' ? mes : `${ano}-12`, 12))
+  const serie = $derived(serieMeses(base, modo === 'mes' ? mes : `${ano}-12`, 12))
   const cats = tipo => agrupar(lista, tipo, 'categoria').map(x => ({ ...x, nome: nomeCat(x.chave), cor: corCat(x.chave) }))
   const entradasCat = $derived(cats('entrada'))
   const saidasCat = $derived(cats('saida'))
   // cor fixa por forma de pagamento (não pela posição no ranking)
   const formas = $derived(agrupar(lista, 'entrada', 'forma').map(x => ({ ...x, nome: x.chave || 'Não anotado', cor: x.chave && FORMAS.includes(x.chave) ? corDaPosicao(FORMAS.indexOf(x.chave)) : '#a4949a' })))
-  const semana = $derived(porDiaSemana(lista))
+  const semana = $derived(porDiaSemana(detalhe))
   const melhorDia = $derived(semana.reduce((m, x) => (x.media > m.media ? x : m), semana[0]))
-  const diario = $derived(modo === 'mes' ? porDiaDoMes(lista, mes) : [])
+  const diario = $derived(modo === 'mes' ? porDiaDoMes(detalhe, mes) : [])
   const melhorDiaMes = $derived(diario.reduce((m, x) => (x.entradas > (m?.entradas || 0) ? x : m), null))
 
   // ano: tabela mês a mês contra o ano anterior
   const anoAno = $derived(modo === 'ano' ? MESES_LONGO.map((nome, i) => {
     const m = `${ano}-${String(i + 1).padStart(2, '0')}`
-    const a = resumo(lancsDoMes(S.lancamentos, m)), b = resumo(lancsDoMes(S.lancamentos, somarMeses(m, -12)))
+    const a = resumo(lancsDoMes(base, m)), b = resumo(lancsDoMes(base, somarMeses(m, -12)))
     return { nome, m, ...a, antes: b.entradas, var: variacao(a.entradas, b.entradas) }
   }) : [])
 
@@ -145,8 +150,8 @@
   <div class="mt-4 grid gap-4 lg:grid-cols-2">
     <section class="cartao px-4 py-4 lg:px-6">
       <h2 class="titulo mb-0.5 text-[18px] font-semibold">De onde vem o dinheiro</h2>
-      <p class="mb-4 text-[12.5px] text-txt-3">Entradas por tipo de venda · toque para ver os lançamentos</p>
-      <BarrasLista itens={entradasCat} aoTocar={x => (busca = { categoria: x.chave, tipo: 'entrada' })} />
+      <p class="mb-4 text-[12.5px] text-txt-3">Entradas por tipo de venda{arquivado ? '' : ' · toque para ver os lançamentos'}</p>
+      <BarrasLista itens={entradasCat} aoTocar={arquivado ? undefined : x => (busca = { categoria: x.chave, tipo: 'entrada' })} />
       {#if formas.length}
         <h3 class="mt-6 mb-3 text-[13px] font-semibold text-txt-2">Como os clientes pagam</h3>
         <BarrasLista itens={formas} />
@@ -154,8 +159,8 @@
     </section>
     <section class="cartao px-4 py-4 lg:px-6">
       <h2 class="titulo mb-0.5 text-[18px] font-semibold">Para onde vai o dinheiro</h2>
-      <p class="mb-4 text-[12.5px] text-txt-3">Saídas por categoria · toque para ver os lançamentos</p>
-      <BarrasLista itens={saidasCat} aoTocar={x => (busca = { categoria: x.chave, tipo: 'saida' })} />
+      <p class="mb-4 text-[12.5px] text-txt-3">Saídas por categoria{arquivado ? '' : ' · toque para ver os lançamentos'}</p>
+      <BarrasLista itens={saidasCat} aoTocar={arquivado ? undefined : x => (busca = { categoria: x.chave, tipo: 'saida' })} />
     </section>
   </div>
 
@@ -164,9 +169,13 @@
       <section class="cartao px-4 py-4 lg:px-6">
         <h2 class="titulo mb-0.5 text-[18px] font-semibold">Dia a dia</h2>
         <p class="mb-4 text-[12.5px] text-txt-3">Quanto entrou em cada dia{melhorDiaMes ? ` · melhor dia: ${melhorDiaMes.dia} (${fmt(melhorDiaMes.entradas)})` : ''}</p>
-        <BarrasSimples itens={diario.map(d => ({ ...d, valor: d.entradas }))} cor="var(--color-ent)"
-          rotulo={(x, i) => (i === 0 || (i + 1) % 5 === 0 ? String(x.dia) : '')}
-          dica={x => (x ? `Dia ${x.dia}: entrou ${fmt(x.entradas)} · saiu ${fmt(x.saidas)}` : 'Entradas por dia do mês')} />
+        {#if arquivado}
+          <p class="rounded-2xl bg-sup-2 px-4 py-6 text-center text-[13.5px] leading-relaxed text-txt-2">Este mês foi arquivado: aqui fica só o total. Os lançamentos de cada dia estão na planilha “Ternura Flores · Arquivo”.</p>
+        {:else}
+          <BarrasSimples itens={diario.map(d => ({ ...d, valor: d.entradas }))} cor="var(--color-ent)"
+            rotulo={(x, i) => (i === 0 || (i + 1) % 5 === 0 ? String(x.dia) : '')}
+            dica={x => (x ? `Dia ${x.dia}: entrou ${fmt(x.entradas)} · saiu ${fmt(x.saidas)}` : 'Entradas por dia do mês')} />
+        {/if}
       </section>
     {:else}
       <section class="cartao px-4 py-4 lg:px-6">
@@ -190,8 +199,13 @@
     <section class="cartao px-4 py-4 lg:px-6">
       <h2 class="titulo mb-0.5 text-[18px] font-semibold">Melhores dias da semana</h2>
       <p class="mb-4 text-[12.5px] text-txt-3">Média de vendas em cada dia{melhorDia?.media ? ` · ${DIAS[melhorDia.dia]} é o mais forte` : ''}</p>
-      <BarrasSimples itens={semana.map(x => ({ ...x, valor: x.media }))} altura={140} mostrarValor destaque={melhorDia?.media ? melhorDia.dia : -1}
-        rotulo={x => DIAS_CURTO[x.dia]} dica={x => (x ? `${DIAS[x.dia]}: média de ${fmt(x.media)}` : 'Média de vendas por dia da semana')} />
+      {#if arquivado && !detalhe.length}
+        <p class="rounded-2xl bg-sup-2 px-4 py-6 text-center text-[13.5px] leading-relaxed text-txt-2">Período arquivado: o resumo é por mês, então não dá para ver os dias da semana. O detalhe está na planilha “Ternura Flores · Arquivo”.</p>
+      {:else}
+        <BarrasSimples itens={semana.map(x => ({ ...x, valor: x.media }))} altura={140} mostrarValor destaque={melhorDia?.media ? melhorDia.dia : -1}
+          rotulo={x => DIAS_CURTO[x.dia]} dica={x => (x ? `${DIAS[x.dia]}: média de ${fmt(x.media)}` : 'Média de vendas por dia da semana')} />
+        {#if arquivado}<p class="mt-2 text-[12px] text-txt-3">Só os meses que ainda têm o detalhe de cada dia.</p>{/if}
+      {/if}
     </section>
   </div>
 </div>

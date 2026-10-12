@@ -27,6 +27,12 @@ class Faixa {
     return this
   }
   setNumberFormat() { return this }
+  clearContent() {
+    for (let i = 0; i < this.nl; i++) { const linha = this.aba.dados[this.l - 1 + i]; if (linha) for (let j = 0; j < this.nc; j++) linha[this.c - 1 + j] = '' }
+    // como o Sheets: linhas vazias no fim não contam em getLastRow
+    while (this.aba.dados.length && this.aba.dados.at(-1).every(v => v === '' || v == null)) this.aba.dados.pop()
+    return this
+  }
   setFontWeight() { return this }
   setBackground() { return this }
 }
@@ -38,6 +44,7 @@ class Aba {
   getMaxRows() { return Math.max(1000, this.dados.length) }
   setFrozenRows() {}
   deleteRow(l) { this.dados.splice(l - 1, 1) }
+  deleteRows(l, n) { this.dados.splice(l - 1, n) }
 }
 
 export function carregarServidor({ props = {} } = {}) {
@@ -61,7 +68,7 @@ export function carregarServidor({ props = {} } = {}) {
   const pad = n => String(n).padStart(2, '0')
   const ctx = {
     console: { log() {}, warn() {}, error() {} },
-    SpreadsheetApp: { getActiveSpreadsheet: () => planilha, create: () => { const p = novaPlanilha('temp' + temporarias.length); temporarias.push(p); return p }, flush() {} },
+    SpreadsheetApp: { getActiveSpreadsheet: () => planilha, create: () => { const p = novaPlanilha('temp' + temporarias.length); temporarias.push(p); return p }, openById: id => { const p = temporarias.find(x => x.id === id); if (!p) throw new Error('não existe'); return p }, flush() {} },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => propriedades[k] ?? null, setProperty: (k, v) => { propriedades[k] = v } }) },
     CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v) }) },
     LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock() {} }) },
@@ -81,11 +88,11 @@ export function carregarServidor({ props = {} } = {}) {
       },
     },
     DriveApp: { getFileById: id => ({ setTrashed: v => v && lixeira.push(id) }), getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
-    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyDays: () => ({ atHour: () => ({ nearMinute: () => ({ create() {} }) }) }) }) }) },
+    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => ({ timeBased: () => ({ everyDays: () => ({ atHour: () => ({ nearMinute: () => ({ create() {} }) }) }), onMonthDay: () => ({ atHour: () => ({ create() {} }) }) }) }) },
   }
   vm.createContext(ctx)
   const codigo = readFileSync(new URL('../../apps-script/Codigo.gs', import.meta.url), 'utf8')
-  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, testeDeVelocidade, TABELAS };', ctx)
+  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, testeDeVelocidade, arquivarAntigos, TABELAS };', ctx)
   const s = ctx.__s
   // chama como o app chama: POST com JSON no corpo
   const post = (acao, dados = {}, codigoAcesso = propriedades.CODIGO_ACESSO) =>

@@ -19,6 +19,7 @@ export const S = $state({
   contas: [],
   fornecedores: [],
   fechamentos: [],
+  resumos: [], // totais por mês dos anos arquivados
   // formulários abertos por cima (null = fechado)
   lanc: null,
   encomenda: null,
@@ -56,6 +57,15 @@ export const fornecedor = id => indice('forn', S.fornecedores).get(id)
 export const nomeCat = id => cat(id)?.nome || 'Sem categoria'
 export const corCat = id => cat(id)?.cor || '#a4949a'
 
+// Lançamentos + os totais por mês dos anos arquivados, no mesmo formato (data = dia 1 do mês,
+// resumo: true). É o que os relatórios usam; o dia a dia e a busca usam só S.lancamentos.
+export function historico() {
+  if (!S.resumos.length) return S.lancamentos
+  return [...S.lancamentos, ...S.resumos.map(x => ({ id: 'resumo-' + x.id, data: x.mes + '-01', tipo: x.tipo, valor: x.valor, categoria: x.categoria, forma: x.forma, resumo: true }))]
+}
+export const mesArquivado = m => S.resumos.some(x => x.mes === m)
+export const anoArquivado = a => S.resumos.some(x => x.mes.startsWith(String(a)))
+
 export const categoriasDoTipo = tipo => S.categorias.filter(c => c.tipo === tipo)
 export const lancsDoDia = d => S.lancamentos.filter(l => l.data === d)
 export const fechamento = d => S.fechamentos.find(f => f.data === d)
@@ -82,7 +92,7 @@ export const encomendasAtivas = () => S.encomendas
   .sort((a, b) => (a.entrega_data + (a.entrega_hora || '99')).localeCompare(b.entrega_data + (b.entrega_hora || '99')))
 
 /* ---------- Normalização do que vem da planilha ---------- */
-const NUMEROS = ['valor', 'sinal', 'entradas', 'saidas', 'ordem']
+const NUMEROS = ['valor', 'sinal', 'entradas', 'saidas', 'ordem', 'qtd']
 function normal(reg) {
   const r = { ...reg }
   for (const k of NUMEROS) if (k in r) r[k] = Number(r[k]) || 0
@@ -102,6 +112,7 @@ function aplicar(dados) {
   S.contas = (dados.contas || []).map(normal)
   S.fornecedores = (dados.fornecedores || []).map(normal)
   S.fechamentos = (dados.fechamentos || []).map(normal)
+  S.resumos = (dados.resumos || []).map(normal)
   versaoDados = dados.versao ?? versaoDados
   S.carregadoEm = Date.now()
 }
@@ -111,7 +122,7 @@ function guardarCache() {
   try {
     localStorage.setItem(CHAVE_CACHE, JSON.stringify({
       categorias: S.categorias.map(({ cor, ...c }) => c), lancamentos: S.lancamentos, encomendas: S.encomendas,
-      contas: S.contas, fornecedores: S.fornecedores, fechamentos: S.fechamentos,
+      contas: S.contas, fornecedores: S.fornecedores, fechamentos: S.fechamentos, resumos: S.resumos,
     }))
   } catch {}
 }

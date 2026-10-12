@@ -83,7 +83,7 @@ function gerar() {
     enc('Renata Alves', 'Cesta de café da manhã com flores', 230, 100, 4, '08:00', 'entrega', 'aberta'),
     enc('Carlos Mendes', 'Orquídea branca', 120, 120, -2, '', 'retirada', 'entregue'),
   ]
-  return { categorias: CATEGORIAS_INICIAIS, lancamentos: lancs, encomendas, contas, fornecedores, fechamentos }
+  return { categorias: CATEGORIAS_INICIAIS, lancamentos: lancs, encomendas, contas, fornecedores, fechamentos, resumos: [] }
 }
 
 function ler() {

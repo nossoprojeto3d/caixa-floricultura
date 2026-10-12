@@ -67,7 +67,7 @@ const novoServidor = () => {
 
 test('configurar cria as abas e as categorias iniciais', () => {
   const s = novoServidor()
-  assert.equal(s.abas.size, 6)
+  assert.equal(s.abas.size, 7)
   assert.equal(s.lerTabela('categorias').length, 14)
   s.configurar() // rodar de novo não duplica
   assert.equal(s.lerTabela('categorias').length, 14)
@@ -175,4 +175,54 @@ test('versão dos dados muda a cada gravação e vem junto no carregar', () => {
   const v2 = s.post('versao').dados
   assert.notEqual(v1, v2)
   assert.equal(s.post('carregar').dados.versao, v2)
+})
+
+/* ---------------- Arquivo dos anos antigos ---------------- */
+test('arquivar: mantém 2 anos completos + o atual, copia o resto e resume por mês', () => {
+  const s = novoServidor()
+  const ano = new Date().getFullYear()
+  const velho = ano - 3, guardado = ano - 2
+  const lanc = (id, data, tipo, valor, forma = 'Pix') => ({ op: 'salvar', tabela: 'lancamentos', registro: { id, data, tipo, valor, categoria: tipo === 'entrada' ? 'c-balcao' : 'c-flores', forma, descricao: '', origem: 'caderno', ref: '', criado: '' } })
+  s.post('lote', { ops: [
+    lanc('a1', `${velho}-03-10`, 'entrada', 100), lanc('a2', `${velho}-03-10`, 'entrada', 50.5), lanc('a3', `${velho}-03-11`, 'entrada', 20, 'Dinheiro'),
+    lanc('a4', `${velho}-03-12`, 'saida', 70), lanc('a5', `${velho}-12-31`, 'entrada', 10),
+    lanc('b1', `${guardado}-01-01`, 'entrada', 999), lanc('c1', `${ano}-01-05`, 'entrada', 5),
+  ] })
+  const conta = (id, status, pago_em, venc) => ({ op: 'salvar', tabela: 'contas', registro: { id, descricao: id, fornecedor: '', valor: 10, vencimento: venc, categoria: '', status, pago_em, forma: '', repetir: 'nao', codigo: '', obs: '', lanc: '', criado: '' } })
+  s.post('lote', { ops: [conta('paga-velha', 'paga', `${velho}-05-01`, `${velho}-05-01`), conta('aberta-velha', 'aberta', '', `${velho}-05-01`)] })
+
+  const rel = s.arquivarAntigos()
+  assert.ok(rel.some(r => r.startsWith('Lançamentos: 5')), rel.join())
+
+  // principal: só o que é de (ano-2) para cá
+  assert.deepEqual(s.lerTabela('lancamentos').map(l => l.id).sort(), ['b1', 'c1'])
+  // conta paga antiga sai, conta em aberto antiga fica (ainda precisa ser paga)
+  assert.deepEqual(s.lerTabela('contas').map(c => c.id), ['aberta-velha'])
+
+  // arquivo: tudo copiado, nada perdido
+  const arq = s.temporarias.find(p => p.abas.has(`Lançamentos ${velho}`))
+  assert.equal(arq.abas.get(`Lançamentos ${velho}`).dados.length - 1, 5)
+  assert.equal(arq.abas.get(`Contas a pagar ${velho}`).dados.length - 1, 1)
+
+  // resumos: totais certos por mês, tipo, categoria e forma, mais os dias com venda
+  const r = Object.fromEntries(s.lerTabela('resumos').map(x => [x.id, x]))
+  assert.equal(r[`${velho}-03|entrada|c-balcao|Pix`].valor, 150.5)
+  assert.equal(r[`${velho}-03|entrada|c-balcao|Pix`].qtd, 2)
+  assert.equal(r[`${velho}-03|entrada|c-balcao|Dinheiro`].valor, 20)
+  assert.equal(r[`${velho}-03|saida|c-flores|Pix`].valor, 70)
+  assert.equal(r[`${velho}-03|dias`].valor, 2) // dias 10 e 11 tiveram venda
+  assert.equal(r[`${velho}-12|dias`].valor, 1)
+
+  // o app recebe os resumos junto com o resto
+  assert.ok(s.post('carregar').dados.resumos.length >= 5)
+
+  // rodar de novo não arquiva nada nem soma duas vezes
+  assert.equal(s.arquivarAntigos().length, 0)
+  assert.equal(Object.fromEntries(s.lerTabela('resumos').map(x => [x.id, x]))[`${velho}-03|entrada|c-balcao|Pix`].valor, 150.5)
+})
+
+test('o app não consegue gravar resumos (só o arquivamento grava)', () => {
+  const s = novoServidor()
+  const r = s.post('lote', { ops: [{ op: 'salvar', tabela: 'resumos', registro: { id: 'x', mes: '2020-01', tipo: 'entrada', categoria: '', forma: '', valor: 1, qtd: 1, criado: '' } }] })
+  assert.equal(r.ok, false)
 })

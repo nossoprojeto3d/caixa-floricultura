@@ -9,13 +9,18 @@ export function lancsDoPeriodo(lancs, inicio, fim) {
 export const lancsDoMes = (lancs, m) => lancs.filter(l => mesDe(l.data) === m)
 export const lancsDoAno = (lancs, a) => lancs.filter(l => l.data.startsWith(String(a)))
 
+// Aceita também as linhas de resumo dos anos arquivados (ver historico() no estado):
+// elas trazem o total do mês e, no tipo 'dias', quantos dias tiveram venda.
 export function resumo(lista) {
-  let e = 0, s = 0
+  let e = 0, s = 0, diasResumo = 0
   const dias = new Set()
   for (const l of lista) {
-    if (l.tipo === 'entrada') { e += cent(l.valor); dias.add(l.data) } else s += cent(l.valor)
+    if (l.tipo === 'dias') diasResumo += l.valor
+    else if (l.tipo === 'entrada') { e += cent(l.valor); if (!l.resumo) dias.add(l.data) }
+    else if (l.tipo === 'saida') s += cent(l.valor)
   }
-  return { entradas: r(e), saidas: r(s), saldo: r(e - s), diasComVenda: dias.size, mediaDia: dias.size ? r(Math.round(e / dias.size)) : 0 }
+  const n = dias.size + diasResumo
+  return { entradas: r(e), saidas: r(s), saldo: r(e - s), diasComVenda: n, mediaDia: n ? r(Math.round(e / n)) : 0 }
 }
 
 // Agrupa por uma chave (categoria, forma...) e ordena do maior para o menor
@@ -37,7 +42,9 @@ export function serieMeses(lancs, ate = mesAtual(), n = 12) {
   const mapa = new Map(meses.map(m => [m, { mes: m, e: 0, s: 0 }]))
   for (const l of lancs) {
     const x = mapa.get(mesDe(l.data))
-    if (x) l.tipo === 'entrada' ? (x.e += cent(l.valor)) : (x.s += cent(l.valor))
+    if (!x) continue
+    if (l.tipo === 'entrada') x.e += cent(l.valor)
+    else if (l.tipo === 'saida') x.s += cent(l.valor)
   }
   return meses.map(m => { const x = mapa.get(m); return { mes: m, entradas: r(x.e), saidas: r(x.s), saldo: r(x.e - x.s) } })
 }

@@ -49,7 +49,7 @@ Salve.
 2. O Google pede autorização. Escolha a conta, clique em **Avançado › Acessar Ternura Flores (não seguro)** e permita. O aviso aparece porque o script é seu e não passou pela verificação do Google, o que é normal.
 3. No registro de execução deve aparecer **Pronto!** e o status de cada item. A planilha ganha as abas e as categorias iniciais.
 
-O passo 5 também cria o gatilho que manda os lembretes **todo dia às 8h**.
+O passo 5 também cria dois gatilhos: os lembretes **todo dia às 8h** e o **arquivo dos anos antigos** (todo dia 2, de madrugada). A planilha principal guarda o detalhe dos 2 anos anteriores completos mais o ano atual; o que for mais antigo é copiado para uma planilha "Ternura Flores · Arquivo" no mesmo Drive (nada é apagado) e vira um resumo por mês, que os relatórios usam.
 
 ## 6. Publicar o servidor
 

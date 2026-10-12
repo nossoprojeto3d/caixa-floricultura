@@ -7,6 +7,8 @@ export const TABELAS = {
   contas: ['id', 'descricao', 'fornecedor', 'valor', 'vencimento', 'categoria', 'status', 'pago_em', 'forma', 'repetir', 'codigo', 'obs', 'lanc', 'criado'],
   fornecedores: ['id', 'nome', 'telefone', 'produtos', 'pix', 'obs', 'criado'],
   fechamentos: ['id', 'data', 'foto', 'entradas', 'saidas', 'obs', 'criado'],
+  // totais por mês dos anos arquivados; gravados só pelo servidor (tipo 'dias' = dias com venda no mês)
+  resumos: ['id', 'mes', 'tipo', 'categoria', 'forma', 'valor', 'qtd', 'criado'],
 }
 
 // Sugestão para começar: dá para renomear, apagar e criar outras em Mais › Categorias

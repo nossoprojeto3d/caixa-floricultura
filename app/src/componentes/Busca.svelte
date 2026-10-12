@@ -49,6 +49,9 @@
     {#each resultado.slice(0, limite) as l (l.id)}<ItemLanc {l} mostrarData aoTocar={editarLanc} />{/each}
     {#if !resultado.length}<p class="px-4 py-8 text-center text-[14px] text-txt-3">Nada encontrado.</p>{/if}
   </div>
+  {#if S.resumos.length}
+    <p class="mt-3 px-1 text-[12.5px] text-txt-3">Lançamentos de anos arquivados não aparecem aqui: estão na planilha “Ternura Flores · Arquivo”.</p>
+  {/if}
   {#if resultado.length > limite}
     <button class="mt-3 h-11 w-full rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={() => (limite += 100)}>Mostrar mais</button>
   {/if}
