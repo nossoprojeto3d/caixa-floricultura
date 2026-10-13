@@ -134,7 +134,6 @@ export const Demo = {
   },
   async versao() { return 'demo' },
   async foto(id) { await espera(200); return fotos.get(id) || '' },
-  async testarTelegram() { await espera(500); throw new Error('No modo demonstração o Telegram não está ligado.') },
-  async info() { await espera(200); return { planilha: '', telegram: { configurado: false, pessoas: 0 }, ia: false } },
+  async info() { await espera(200); return { planilha: '', ia: false } },
   apagarTudo() { try { localStorage.removeItem(CHAVE) } catch {} },
 }

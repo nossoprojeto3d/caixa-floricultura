@@ -20,7 +20,7 @@
     enviando = true
     try {
       await salvarConta({ ...f, descricao: f.descricao.trim(), valor: lerValor(f.valor), codigo: f.codigo.replace(/\s+/g, ' ').trim() })
-      avisar(f.id ? 'Conta atualizada' : 'Conta anotada. Vou lembrar no vencimento.')
+      avisar(f.id ? 'Conta atualizada' : 'Conta anotada')
       fechar()
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }

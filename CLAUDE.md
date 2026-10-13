@@ -1,16 +1,16 @@
 # Contexto do projeto: Ternura Flores · Caixa
 
 ## O que é
-PWA de caixa da **Ternura Flores**, a floricultura da mãe do dono do repositório. Substitui o caderninho: no fim do dia ela tira foto da página do caderno, a IA lê, ela confere e o dia é fechado. Também anota encomendas, contas a pagar (boletos e fornecedores) com lembrete no Telegram, e mostra relatórios para entender a saúde da loja (mês a mês, de onde vem e para onde vai o dinheiro). Movimento pequeno: cerca de R$ 500 por dia.
+PWA de caixa da **Ternura Flores**, a floricultura da mãe do dono do repositório. Substitui o caderninho: no fim do dia ela tira foto da página do caderno, a IA lê, ela confere e o dia é fechado. Também anota encomendas, contas a pagar (boletos e fornecedores) com aviso de vencimento dentro do app, e mostra relatórios para entender a saúde da loja (mês a mês, de onde vem e para onde vai o dinheiro). Movimento pequeno: cerca de R$ 500 por dia.
 
 Usuários: a mãe (celular Android ou iPhone) e o irmão (o outro), às vezes no computador. Sem login por pessoa: um **código de acesso** digitado uma vez em cada aparelho.
 
 Publicado em <https://nossoprojeto3d.github.io/caixa-floricultura/>. Versão: 1.0.1.
 
 ## Regras que não mudam
-- **Custo zero:** GitHub Pages + Google Sheets/Apps Script + Gemini grátis + Telegram. Nada pago sem autorização.
+- **Custo zero:** GitHub Pages + Google Sheets/Apps Script + Gemini grátis. Nada pago sem autorização.
 - **Dados no Google Sheets** (decisão do dono), nunca no repositório (é público).
-- **Lembretes pelo Telegram** (decisão do dono). WhatsApp foi descartado: a API oficial é paga.
+- **Sem mensagens fora do app** (decisão do dono): o Telegram foi implementado e removido; WhatsApp descartado (API paga). Avisos de contas e encomendas ficam só dentro do app (tela Hoje e bolinhas da navegação). Não recriar sem pedido.
 - **Mobile primeiro**, linguagem simples para leigos (nada de "margem", "fluxo de caixa operacional": use "sobrou", "de onde vem o dinheiro").
 - Tudo em português do Brasil, inclusive nomes de funções e variáveis.
 - **Valores em centavos** nas contas (`cent()` em `app/src/lib/formato.js`).
@@ -31,7 +31,7 @@ A floricultura é nos tons verdes. Papel de folha clara, tinta verde-musgo e um 
 - `app/src/lib/analise.js`: contas dos relatórios. `formato.js`: dinheiro e datas. `dados.js`: colunas das tabelas, categorias iniciais, formas de pagamento, paleta.
 - `app/src/telas/`: `Hoje`, `Encomendas`, `Contas`, `Relatorios`, `Mais`, `Porta` (código de acesso).
 - `app/src/componentes/`: `Lancar` (teclado próprio), `Caderno` (fluxo da foto), `Form*` (encomenda, conta, fornecedor), `Folha`, gráficos (`GraficoMeses`, `BarrasLista`, `BarrasSimples`), `Busca`, `Flor`, `Petalas`.
-- `apps-script/Codigo.gs`: servidor. Abas da planilha, lote com trava, Gemini (foto), fotos no Drive (pasta própria; só devolve fotos dessa pasta), Telegram (gatilho diário às 8h), função `configurar`.
+- `apps-script/Codigo.gs`: servidor. Abas da planilha, lote com trava, Gemini (foto), fotos no Drive (pasta própria; só devolve fotos dessa pasta), função `configurar`.
 - `CONFIGURAR.md`: passo a passo de instalação do servidor.
 
 ## Dados

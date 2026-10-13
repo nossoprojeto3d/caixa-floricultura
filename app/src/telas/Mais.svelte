@@ -1,29 +1,23 @@
 <script>
-  import { Truck, Tags, BellRing, Download, Smartphone, Info, ChevronRight, ChevronUp, ChevronDown, Plus, MessageCircle, Pencil, Trash2, FileSpreadsheet, LogOut, RotateCcw, Send } from '@lucide/svelte'
+  import { Truck, Tags, Download, Smartphone, ChevronRight, ChevronUp, ChevronDown, Plus, MessageCircle, Pencil, Trash2, FileSpreadsheet, LogOut, RotateCcw } from '@lucide/svelte'
   import Folha from '../componentes/Folha.svelte'
   import Campo from '../componentes/Campo.svelte'
   import Escolha from '../componentes/Escolha.svelte'
   import { S, demo, abrirFornecedor, salvarCategoria, excluirCategoria, moverCategoria, usoCategoria, categoriasDoTipo, contasAbertas, avisar, tratarErro, confirmar, sair, VERSAO } from '../lib/estado.svelte.js'
-  import { Api, codigoSalvo } from '../lib/api.js'
+  import { Api } from '../lib/api.js'
   import { baixarCSV } from '../lib/exportar.js'
   import { telefoneWhats, fmt } from '../lib/formato.js'
 
-  let painel = $state(null) // 'fornecedores' | 'categorias' | 'telegram' | 'exportar' | 'instalar'
+  let painel = $state(null) // 'fornecedores' | 'categorias' | 'exportar' | 'instalar'
   let cat = $state(null) // categoria sendo editada { id, nome, tipo }
   let apagando = $state(null) // { cat, destino }
   let info = $state(null)
-  let testando = $state(false)
   let tipoCat = $state('entrada')
 
-  async function abrirTelegram() {
-    painel = 'telegram'
-    try { info = await Api.info() } catch (e) { tratarErro(e) }
-  }
-  async function testar() {
-    if (testando) return
-    testando = true
-    try { const r = await Api.testarTelegram(); avisar(`Mensagem enviada para ${r?.enviadas ?? 'o'} Telegram`) }
-    catch (e) { tratarErro(e) } finally { testando = false }
+  // o link da planilha vem do servidor (no modo demonstração não existe)
+  async function abrirExportar() {
+    painel = 'exportar'
+    if (!demo && !info) try { info = await Api.info() } catch (e) { tratarErro(e) }
   }
   async function salvarCat() {
     const nome = cat.nome.trim()
@@ -63,8 +57,7 @@
   const ITENS = [
     ['fornecedores', Truck, 'Fornecedores', () => `${S.fornecedores.length} cadastrado${S.fornecedores.length === 1 ? '' : 's'}`],
     ['categorias', Tags, 'Categorias', () => 'Tipos de entrada e saída'],
-    ['telegram', BellRing, 'Lembretes no Telegram', () => 'Avisos de contas e encomendas'],
-    ['exportar', Download, 'Exportar para o Excel', () => 'Para o contador ou para guardar'],
+    ['exportar', Download, 'Planilha e Excel', () => 'Abrir a planilha ou baixar para o contador'],
     ['instalar', Smartphone, 'Instalar no celular', () => 'Ícone na tela de início'],
   ]
 </script>
@@ -81,7 +74,7 @@
 
 <div class="cartao divide-y divide-linha/70 overflow-hidden lg:max-w-2xl">
   {#each ITENS as [id, Icone, nome, sub]}
-    <button class="flex min-h-16 w-full items-center gap-3.5 px-4 py-3 text-left hover:bg-sup-2/60" onclick={() => (id === 'telegram' ? abrirTelegram() : (painel = id))}>
+    <button class="flex min-h-16 w-full items-center gap-3.5 px-4 py-3 text-left hover:bg-sup-2/60" onclick={() => (id === 'exportar' ? abrirExportar() : (painel = id))}>
       <span class="grid size-10 place-items-center rounded-full bg-destaque-fundo text-destaque"><Icone size={19} /></span>
       <span class="flex-1"><span class="block text-[15.5px] font-medium">{nome}</span><span class="text-[13px] text-txt-3">{sub()}</span></span>
       <ChevronRight size={18} class="text-txt-3" />
@@ -160,33 +153,11 @@
   </Folha>
 {/if}
 
-{#if painel === 'telegram'}
-  <Folha titulo="Lembretes no Telegram" aoFechar={() => (painel = null)} largo>
-    <p class="text-[14.5px] leading-relaxed text-txt-2">Todo dia de manhã chega uma mensagem no Telegram com as contas que vencem (e as atrasadas) e as encomendas do dia. Funciona mesmo com o app fechado.</p>
-    {#if demo}
-      <p class="mt-4 rounded-2xl bg-alerta-fundo p-4 text-[13.5px] text-alerta">No modo demonstração o Telegram fica desligado. Ele funciona depois de configurar a planilha (veja o guia no GitHub).</p>
-    {:else if !info}
-      <div class="grid h-24 place-items-center"><span class="size-7 animate-spin rounded-full border-2 border-destaque/30 border-t-destaque"></span></div>
-    {:else if info.telegram?.configurado}
-      {#if info.telegram.bot}
-        <a class="mt-4 flex h-12 items-center justify-center gap-2 rounded-2xl bg-[#2a9fd8] text-[15px] font-semibold text-white" href="https://t.me/{info.telegram.bot}?start={encodeURIComponent(codigoSalvo())}" target="_blank" rel="noopener"><Send size={17} /> Conectar o Telegram deste celular</a>
-        <p class="mt-2 text-[12.5px] leading-relaxed text-txt-3">Abre o bot @{info.telegram.bot}. Toque em “Começar” e volte aqui para mandar o teste. Cada pessoa faz isso no próprio celular.</p>
-      {/if}
-      <div class="mt-4 rounded-2xl bg-ent-fundo p-4 text-[14px] text-ent">
-        <p class="font-semibold">Bot ligado · {info.telegram.pessoas} pessoa{info.telegram.pessoas === 1 ? '' : 's'} recebendo</p>
-      </div>
-      <button class="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-txt text-[15px] font-semibold text-fundo disabled:opacity-60" disabled={testando} onclick={testar}><Send size={17} />{testando ? 'Enviando…' : 'Mandar mensagem de teste'}</button>
-    {:else}
-      <p class="mt-4 rounded-2xl bg-alerta-fundo p-4 text-[13.5px] leading-relaxed text-alerta">Ainda não configurado. Siga o passo “Telegram” do guia de instalação (arquivo CONFIGURAR.md no GitHub).</p>
-    {/if}
-    {#if info?.planilha}
-      <a class="mt-5 flex h-12 items-center justify-center gap-2 rounded-2xl border border-linha bg-sup text-[15px] font-medium text-txt-2" href={info.planilha} target="_blank" rel="noopener"><FileSpreadsheet size={18} /> Abrir a planilha</a>
-    {/if}
-  </Folha>
-{/if}
-
 {#if painel === 'exportar'}
-  <Folha titulo="Exportar para o Excel" aoFechar={() => (painel = null)}>
+  <Folha titulo="Planilha e Excel" aoFechar={() => (painel = null)}>
+    {#if info?.planilha}
+      <a class="mb-5 flex h-12 items-center justify-center gap-2 rounded-2xl border border-linha bg-sup text-[15px] font-medium text-txt-2" href={info.planilha} target="_blank" rel="noopener"><FileSpreadsheet size={18} /> Abrir a planilha do Google</a>
+    {/if}
     <p class="mb-4 text-[14.5px] leading-relaxed text-txt-2">Baixa um arquivo .csv que abre no Excel. Todos os dados também ficam na planilha do Google.</p>
     <div class="space-y-2">
       {#each anos as a}

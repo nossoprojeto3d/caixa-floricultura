@@ -1,10 +1,10 @@
 <script>
-  import { Plus, Copy, Repeat, CircleCheck, Undo2, Receipt, BellRing } from '@lucide/svelte'
+  import { Plus, Copy, Repeat, CircleCheck, Undo2, Receipt } from '@lucide/svelte'
   import { fade } from 'svelte/transition'
   import Dinheiro from '../componentes/Dinheiro.svelte'
   import Folha from '../componentes/Folha.svelte'
   import Escolha from '../componentes/Escolha.svelte'
-  import { S, abrirConta, contasAbertas, pagarConta, desfazerPagamento, fornecedor, nomeCat, avisar, tratarErro, confirmar, irPara } from '../lib/estado.svelte.js'
+  import { S, abrirConta, contasAbertas, pagarConta, desfazerPagamento, fornecedor, nomeCat, avisar, tratarErro, confirmar } from '../lib/estado.svelte.js'
   import { FORMAS } from '../lib/dados.js'
   import { diasAte, prazo, fmt, hoje, ontem, dataCurta, dataBonita, mesAtual, mesDe } from '../lib/formato.js'
 
@@ -73,7 +73,7 @@
     <div class="cartao px-6 py-12 text-center" in:fade>
       <CircleCheck size={34} class="mx-auto text-ent" strokeWidth={1.6} />
       <p class="titulo mt-3 text-[19px] font-semibold">Tudo pago por aqui</p>
-      <p class="mt-1 text-[14px] text-txt-3">Anote boletos e contas de fornecedor para eu lembrar no vencimento.</p>
+      <p class="mt-1 text-[14px] text-txt-3">Anote boletos e contas de fornecedor para não esquecer o vencimento.</p>
     </div>
   {/if}
   <div class="space-y-5">
@@ -99,7 +99,6 @@
       </section>
     {/each}
   </div>
-  <button class="mt-4 flex h-11 w-full items-center justify-center gap-2 text-[13px] text-txt-3" onclick={() => irPara('mais')}><BellRing size={14} /> Os lembretes chegam no Telegram · configurar em Mais</button>
 {:else}
   {#if !pagas.length}<p class="cartao px-6 py-10 text-center text-[14px] text-txt-3">Nenhuma conta paga ainda.</p>{/if}
   {#if pagas.length}

@@ -2,13 +2,12 @@
  * Ternura Flores · Caixa — servidor (Google Apps Script ligado à planilha).
  *
  * Guarda os dados nas abas da planilha, lê a foto do caderno com o Gemini,
- * guarda as fotos no Google Drive e manda os lembretes no Telegram.
+ * guarda as fotos no Google Drive e arquiva os anos antigos.
  *
  * Configuração (Configurações do projeto › Propriedades do script):
  *   CODIGO_ACESSO   → código que a família digita uma vez em cada aparelho (obrigatório)
  *   GEMINI_API_KEY  → chave do Gemini (aistudio.google.com) para ler a foto do caderno
  *   GEMINI_MODEL    → opcional; padrão "gemini-flash-latest"
- *   TELEGRAM_TOKEN  → token do bot criado no @BotFather, para os lembretes
  * Depois de configurar, rode a função "configurar" uma vez (menu Executar).
  * O passo a passo completo está no CONFIGURAR.md do repositório.
  */
@@ -62,7 +61,6 @@ function doPost(e) {
       case 'lote': dados = aplicarLote(req.ops || []); break;
       case 'lerCaderno': dados = lerCaderno(req.imagem, req.data); break;
       case 'foto': dados = lerFoto(req.id); break;
-      case 'testarTelegram': dados = testarTelegram(); break;
       case 'info': dados = info(); break;
       case 'versao': dados = props().getProperty('VERSAO_DADOS') || ''; break;
       default: throw Erro('Ação desconhecida.');
@@ -320,114 +318,10 @@ function lerFoto(id) {
   return 'data:image/jpeg;base64,' + Utilities.base64Encode(arq.getBlob().getBytes());
 }
 
-/* ---------------- Telegram ---------------- */
-
-function telegram(metodo, dados) {
-  const token = props().getProperty('TELEGRAM_TOKEN');
-  if (!token) throw Erro('Telegram não configurado (falta TELEGRAM_TOKEN).');
-  const r = UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/' + metodo, {
-    method: 'post', contentType: 'application/json', payload: JSON.stringify(dados || {}), muteHttpExceptions: true,
-  });
-  const json = JSON.parse(r.getContentText());
-  if (!json.ok) throw Erro('Telegram: ' + (json.description || r.getResponseCode()));
-  return json.result;
-}
-
-function chatsSalvos() {
-  return (props().getProperty('TELEGRAM_CHATS') || '').split(',').filter(String);
-}
-
-// Quem mandou "/start CODIGO" para o bot passa a receber os lembretes
-function atualizarChats() {
-  const codigo = props().getProperty('CODIGO_ACESSO');
-  const chats = chatsSalvos();
-  const novos = [];
-  const updates = telegram('getUpdates', { allowed_updates: ['message'] });
-  let ultimo = 0;
-  updates.forEach(function (u) {
-    ultimo = Math.max(ultimo, u.update_id);
-    const msg = u.message;
-    if (!msg || !msg.text) return;
-    const texto = msg.text.trim();
-    const id = String(msg.chat.id);
-    if ((texto === '/start ' + codigo || texto === codigo) && chats.indexOf(id) < 0) {
-      chats.push(id); novos.push(id);
-    }
-  });
-  if (ultimo) telegram('getUpdates', { offset: ultimo + 1, limit: 1 }); // marca como lidas
-  props().setProperty('TELEGRAM_CHATS', chats.join(','));
-  novos.forEach(function (id) {
-    enviar(id, '🌷 Pronto! Você vai receber aqui os lembretes da <b>Ternura Flores</b>: contas para pagar e encomendas do dia.');
-  });
-  return chats;
-}
-
-function enviar(chat, html) {
-  return telegram('sendMessage', { chat_id: chat, text: html, parse_mode: 'HTML', disable_web_page_preview: true });
-}
-
-function testarTelegram() {
-  const chats = atualizarChats();
-  if (!chats.length) throw Erro('Ninguém conectado ao bot ainda. Abra o link do bot neste celular e toque em Começar.');
-  const msg = montarLembrete() || 'Teste dos lembretes da Ternura Flores 🌷 Nada vencendo nos próximos dias.';
-  chats.forEach(function (c) { enviar(c, msg); });
-  return { enviadas: chats.length };
-}
-
-const fmt = function (v) { return 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); };
-const esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
-
-function diasAte(iso) {
-  const [y, m, d] = iso.split('-').map(Number);
-  const [hy, hm, hd] = hojeISO().split('-').map(Number);
-  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(hy, hm - 1, hd)) / 864e5);
-}
-
-// Texto do lembrete do dia (vazio se não houver nada para avisar)
-function montarLembrete() {
-  const contas = lerTabela('contas').filter(function (c) { return c.status !== 'paga' && c.vencimento && diasAte(c.vencimento) <= 2; })
-    .sort(function (a, b) { return a.vencimento < b.vencimento ? -1 : 1; });
-  const encs = lerTabela('encomendas').filter(function (e) { return (e.status === 'aberta' || e.status === 'pronta') && e.entrega_data && diasAte(e.entrega_data) <= 1; })
-    .sort(function (a, b) { return (a.entrega_data + a.entrega_hora) < (b.entrega_data + b.entrega_hora) ? -1 : 1; });
-  if (!contas.length && !encs.length) return '';
-  const partes = ['🌷 <b>Bom dia! Lembretes da Ternura Flores</b>'];
-  if (contas.length) {
-    partes.push('');
-    partes.push('💸 <b>Contas para pagar</b>');
-    contas.forEach(function (c) {
-      const n = diasAte(c.vencimento);
-      const quando = n < 0 ? '⚠️ venceu há ' + (-n) + (n === -1 ? ' dia' : ' dias') : n === 0 ? '❗ vence HOJE' : n === 1 ? 'vence amanhã' : 'vence em ' + n + ' dias';
-      partes.push('• ' + esc(c.descricao) + ': <b>' + fmt(c.valor) + '</b> (' + quando + ')');
-    });
-  }
-  if (encs.length) {
-    partes.push('');
-    partes.push('💐 <b>Encomendas</b>');
-    encs.forEach(function (e) {
-      const quando = diasAte(e.entrega_data) < 0 ? '⚠️ atrasada' : diasAte(e.entrega_data) === 0 ? 'hoje' : 'amanhã';
-      partes.push('• ' + quando + (e.entrega_hora ? ' ' + e.entrega_hora : '') + ' · ' + esc(e.cliente) + ': ' + esc(e.pedido).slice(0, 80) + (e.status === 'pronta' ? ' ✅ pronta' : ''));
-    });
-  }
-  return partes.join('\n');
-}
-
-// Roda todo dia de manhã (gatilho criado pela função configurar)
-function lembreteDiario() {
-  if (!props().getProperty('TELEGRAM_TOKEN')) return;
-  const chats = atualizarChats();
-  const msg = montarLembrete();
-  if (!msg) return;
-  chats.forEach(function (c) { try { enviar(c, msg); } catch (err) { console.warn(err); } });
-}
-
 function info() {
-  let bot = '';
-  const token = props().getProperty('TELEGRAM_TOKEN');
-  if (token) { try { bot = telegram('getMe').username; } catch (_) {} }
   return {
     planilha: planilha().getUrl(),
     ia: !!props().getProperty('GEMINI_API_KEY'),
-    telegram: { configurado: !!token, pessoas: chatsSalvos().length, bot: bot },
   };
 }
 
@@ -447,9 +341,6 @@ function configurar() {
   ['Página1', 'Sheet1', 'Planilha1'].forEach(function (n) { const s = ss.getSheetByName(n); if (s && s.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(s); });
   // pasta das fotos
   pastaFotos();
-  // gatilho diário às 8h para os lembretes
-  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'lembreteDiario') ScriptApp.deleteTrigger(t); });
-  ScriptApp.newTrigger('lembreteDiario').timeBased().everyDays(1).atHour(8).nearMinute(0).create();
   // arquivamento: roda todo dia 2 de madrugada, mas só faz algo quando um ano passa dos 2 anos de detalhe
   ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'arquivarAntigos') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('arquivarAntigos').timeBased().onMonthDay(2).atHour(3).create();
@@ -458,7 +349,6 @@ function configurar() {
   console.log('Pronto!');
   console.log('Código de acesso: ' + (p.getProperty('CODIGO_ACESSO') ? 'ok' : 'FALTA (crie a propriedade CODIGO_ACESSO)'));
   console.log('Gemini: ' + (p.getProperty('GEMINI_API_KEY') ? 'ok' : 'falta GEMINI_API_KEY (sem ela a foto não é lida)'));
-  console.log('Telegram: ' + (p.getProperty('TELEGRAM_TOKEN') ? 'ok' : 'falta TELEGRAM_TOKEN (sem ele não há lembretes)'));
   console.log('Fuso horário do projeto: ' + fuso());
 }
 

@@ -49,7 +49,6 @@ const Remoto = {
   lote: ops => chamar('lote', { ops }),
   lerCaderno: (imagem, data) => chamar('lerCaderno', { imagem, data }, 90000),
   foto: id => chamar('foto', { id }, 60000),
-  testarTelegram: () => chamar('testarTelegram'),
   info: () => chamar('info'),
   versao: () => chamar('versao', {}, 15000),
 }

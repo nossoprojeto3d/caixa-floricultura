@@ -1,5 +1,5 @@
 // Simula o pedaço do Google Apps Script que o Codigo.gs usa (planilha, propriedades,
-// trava, cache, Drive, Telegram), para testar o servidor no Node sem conta Google.
+// trava, cache, Drive, Gemini), para testar o servidor no Node sem conta Google.
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 
@@ -51,7 +51,7 @@ export function carregarServidor({ props = {} } = {}) {
   const abas = new Map()
   const propriedades = { ...props }
   const cache = new Map()
-  const telegram = []
+  const chamadas = [] // chamadas a serviços de fora (Gemini)
   const lixeira = []
   const novaPlanilha = (id) => {
     const abasP = new Map()
@@ -82,9 +82,8 @@ export function carregarServidor({ props = {} } = {}) {
     UrlFetchApp: {
       fetch: (url, op) => {
         const corpo = JSON.parse(op.payload || '{}')
-        telegram.push({ url, corpo })
-        const r = url.endsWith('/getUpdates') ? [] : url.endsWith('/getMe') ? { username: 'bot_teste' } : { ok: true }
-        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ ok: true, result: r }) }
+        chamadas.push({ url, corpo })
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"itens":[]}' }] } }] }) }
       },
     },
     DriveApp: { getFileById: id => ({ setTrashed: v => v && lixeira.push(id) }), getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
@@ -92,10 +91,10 @@ export function carregarServidor({ props = {} } = {}) {
   }
   vm.createContext(ctx)
   const codigo = readFileSync(new URL('../../apps-script/Codigo.gs', import.meta.url), 'utf8')
-  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, montarLembrete, configurar, checarCodigo, testeDeVelocidade, arquivarAntigos, TABELAS };', ctx)
+  vm.runInContext(codigo + '\n;globalThis.__s = { doPost, aplicarLote, lerTabela, carregarTudo, configurar, checarCodigo, testeDeVelocidade, arquivarAntigos, TABELAS };', ctx)
   const s = ctx.__s
   // chama como o app chama: POST com JSON no corpo
   const post = (acao, dados = {}, codigoAcesso = propriedades.CODIGO_ACESSO) =>
     JSON.parse(s.doPost({ postData: { contents: JSON.stringify({ acao, codigo: codigoAcesso, ...dados }) } }).texto)
-  return { ...s, post, abas, propriedades, telegram, cache, lixeira, temporarias }
+  return { ...s, post, abas, propriedades, chamadas, cache, lixeira, temporarias }
 }

@@ -60,7 +60,7 @@ test('variacao não divide por zero', () => {
 
 /* ---------------- Servidor (Codigo.gs) ---------------- */
 const novoServidor = () => {
-  const s = carregarServidor({ props: { CODIGO_ACESSO: 'flor123', TELEGRAM_TOKEN: 'x' } })
+  const s = carregarServidor({ props: { CODIGO_ACESSO: 'flor123' } })
   s.configurar()
   return s
 }
@@ -130,22 +130,6 @@ test('texto que parece fórmula (=, +, -, @) volta igual, sem virar fórmula', (
   const f = s.lerTabela('fornecedores')[0]
   assert.equal(f.nome, '=SOMA(A1:A9)')
   assert.equal(f.telefone, '+55 11 99999-0000')
-})
-
-test('lembrete do Telegram lista atrasadas, hoje e encomendas; vazio quando não há nada', () => {
-  const s = novoServidor()
-  assert.equal(s.montarLembrete(), '')
-  const hoje = F.hoje()
-  const conta = (id, venc, status = 'aberta') => ({ op: 'salvar', tabela: 'contas', registro: { id, descricao: 'Conta ' + id, fornecedor: '', valor: 100, vencimento: venc, categoria: '', status, pago_em: '', forma: '', repetir: 'nao', codigo: '', obs: '', lanc: '', criado: '' } })
-  s.post('lote', { ops: [conta('atrasada', F.somarDias(hoje, -2)), conta('hoje', hoje), conta('longe', F.somarDias(hoje, 10)), conta('paga', hoje, 'paga')] })
-  s.post('lote', { ops: [{ op: 'salvar', tabela: 'encomendas', registro: { id: 'e1', cliente: 'Ana <b>', telefone: '', pedido: 'Buquê', valor: 0, sinal: 0, entrega_data: hoje, entrega_hora: '10:00', modo: 'retirada', endereco: '', destinatario: '', cartao: '', status: 'aberta', obs: '', criado: '' } }] })
-  const m = s.montarLembrete()
-  assert.match(m, /Conta atrasada/)
-  assert.match(m, /venceu há 2 dias/)
-  assert.match(m, /vence HOJE/)
-  assert.doesNotMatch(m, /Conta longe/)
-  assert.doesNotMatch(m, /Conta paga/)
-  assert.match(m, /Ana &lt;b&gt;/, 'escapa HTML do nome')
 })
 
 test('ano em andamento compara com o ano anterior só até a mesma data', () => {
