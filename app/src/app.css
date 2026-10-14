@@ -43,6 +43,9 @@
   /* no iPhone, data e horário têm largura mínima própria e vazam da coluna: sem a aparência nativa, cabem */
   input[type='date'], input[type='time'] { min-height: 44px; min-width: 0; max-width: 100%; display: block; -webkit-appearance: none; appearance: none; }
   input[type='date']::-webkit-date-and-time-value, input[type='time']::-webkit-date-and-time-value { text-align: left; margin: 0; }
+  /* sem a aparência nativa o Safari põe o texto no alto do campo: centraliza na altura */
+  input[type='date'].campo, input[type='time'].campo { line-height: 46px; }
+  input[type='date']::-webkit-datetime-edit, input[type='time']::-webkit-datetime-edit { padding: 0; line-height: 46px; }
 }
 
 /* Títulos e números grandes: Fraunces macia (eixo SOFT) */
