@@ -20,7 +20,7 @@ O que você vai criar:
 ## 2. Chave do Gemini (ler a foto do caderno)
 
 1. Entre em [aistudio.google.com/apikey](https://aistudio.google.com/apikey) e clique em **Criar chave de API**.
-2. Copie a chave (começa com `AIza...`).
+2. Copie a chave (começa com `AQ.` nas contas novas ou `AIza` nas antigas).
 
 > No plano gratuito, o Google pode usar as fotos enviadas para melhorar os modelos dele. Se isso incomodar, dá para ativar o faturamento na mesma tela (custa centavos por foto) e o Google deixa de usar os dados.
 
@@ -40,6 +40,7 @@ Salve.
 1. Volte ao editor (`<>` à esquerda), escolha a função **`configurar`** na barra de cima e clique em **Executar**.
 2. O Google pede autorização. Escolha a conta, clique em **Avançado › Acessar Ternura Flores (não seguro)** e permita. O aviso aparece porque o script é seu e não passou pela verificação do Google, o que é normal.
 3. No registro de execução deve aparecer **Pronto!** e o status de cada item. A planilha ganha as abas e as categorias iniciais.
+4. Para conferir a chave do Gemini, escolha a função **`testarGemini`** e clique em **Executar**: o primeiro modelo da lista precisa aparecer como **FUNCIONOU**.
 
 Este passo também cria o gatilho do **arquivo dos anos antigos** (todo dia 2, de madrugada). A planilha principal guarda o detalhe dos 2 anos anteriores completos mais o ano atual; o que for mais antigo é copiado para uma planilha "Ternura Flores · Arquivo" no mesmo Drive (nada é apagado) e vira um resumo por mês, que os relatórios usam.
 
