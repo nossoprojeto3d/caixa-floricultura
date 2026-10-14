@@ -5,7 +5,7 @@ PWA de caixa da **Ternura Flores**, a floricultura da mãe do dono do repositór
 
 Usuários: a mãe (celular Android ou iPhone) e o irmão (o outro), às vezes no computador. Sem login por pessoa: um **código de acesso** digitado uma vez em cada aparelho.
 
-Publicado em <https://nossoprojeto3d.github.io/caixa-floricultura/>. Versão: 1.0.1.
+Publicado em <https://nossoprojeto3d.github.io/caixa-floricultura/>. Versão: 1.1.0.
 
 ## Regras que não mudam
 - **Custo zero:** GitHub Pages + Google Sheets/Apps Script + Gemini grátis. Nada pago sem autorização.

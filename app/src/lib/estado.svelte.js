@@ -4,7 +4,7 @@ import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
 import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from './formato.js'
 
-export const VERSAO = '1.0.1'
+export const VERSAO = '1.1.0'
 const CHAVE_CACHE = 'ternura_cache'
 let versaoDados = '' // muda no servidor a cada gravação
 

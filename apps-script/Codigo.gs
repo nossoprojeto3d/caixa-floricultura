@@ -284,7 +284,7 @@ function lerCaderno(imagem, data) {
   };
 
   const preferido = props().getProperty('GEMINI_MODEL') || 'gemini-flash-latest';
-  const modelos = [preferido, 'gemini-2.5-flash', 'gemini-flash-lite-latest'].filter(function (x, i, a) { return a.indexOf(x) === i; });
+  const modelos = [preferido, 'gemini-3.8-flash', 'gemini-flash-lite-latest'].filter(function (x, i, a) { return a.indexOf(x) === i; });
   let ultimoErro = '';
   for (let i = 0; i < modelos.length; i++) {
     const r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelos[i] + ':generateContent', {
@@ -350,6 +350,23 @@ function configurar() {
   console.log('Código de acesso: ' + (p.getProperty('CODIGO_ACESSO') ? 'ok' : 'FALTA (crie a propriedade CODIGO_ACESSO)'));
   console.log('Gemini: ' + (p.getProperty('GEMINI_API_KEY') ? 'ok' : 'falta GEMINI_API_KEY (sem ela a foto não é lida)'));
   console.log('Fuso horário do projeto: ' + fuso());
+}
+
+// Confere se a chave do Gemini funciona (rodar pelo editor). Manda só um texto curto, sem foto.
+function testarGemini() {
+  const chave = props().getProperty('GEMINI_API_KEY');
+  if (!chave) { console.log('Falta a propriedade GEMINI_API_KEY.'); return; }
+  console.log('Chave começa com: ' + chave.slice(0, 4) + '… (' + chave.length + ' caracteres)');
+  const preferido = props().getProperty('GEMINI_MODEL') || 'gemini-flash-latest';
+  const modelos = [preferido, 'gemini-3.8-flash', 'gemini-flash-lite-latest'].filter(function (x, i, a) { return a.indexOf(x) === i; });
+  modelos.forEach(function (m) {
+    const r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + m + ':generateContent', {
+      method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': chave },
+      payload: JSON.stringify({ contents: [{ parts: [{ text: 'Responda só: ok' }] }] }), muteHttpExceptions: true,
+    });
+    const status = r.getResponseCode();
+    console.log(m + ': ' + (status === 200 ? 'FUNCIONOU' : 'erro ' + status + ' · ' + r.getContentText().slice(0, 300)));
+  });
 }
 
 /* ---------------- Teste de velocidade (rodar pelo editor, quando quiser) ---------------- */
