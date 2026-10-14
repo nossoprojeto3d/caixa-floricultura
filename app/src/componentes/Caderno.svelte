@@ -105,9 +105,11 @@
     if (vazios.length && !(await confirmar(`${vazios.length} linha(s) estão sem valor e não serão salvas. Continuar?`, { ok: 'Continuar' }))) return
     if (!validos.length && !ja.length && !(await confirmar('Nenhum lançamento neste dia. Fechar o dia mesmo assim (loja fechada, por exemplo)?', { ok: 'Fechar dia' }))) return
     enviando = true
+    // conta antes de gravar: depois, as linhas novas já estão no dia e saem de "validos"
+    const novos = validos.map(i => ({ ...i, valor: lerValor(i.valorTxt) }))
     try {
-      await fecharDia(data, validos.map(i => ({ ...i, valor: lerValor(i.valorTxt) })), { foto: fotoId, obs })
-      avisar(validos.length ? `Dia fechado · ${validos.length} lançamento${validos.length > 1 ? 's' : ''}` : 'Dia fechado')
+      await fecharDia(data, novos, { foto: fotoId, obs })
+      avisar(novos.length ? `Dia fechado · ${novos.length} lançamento${novos.length > 1 ? 's' : ''}` : 'Dia fechado')
       terminou()
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }
