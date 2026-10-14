@@ -1,7 +1,7 @@
 <script>
   import { fly, fade } from 'svelte/transition'
   import { cubicOut } from 'svelte/easing'
-  import { Sun, ShoppingBag, Receipt, ChartColumn, Ellipsis, CircleCheck, CircleAlert, WifiOff } from '@lucide/svelte'
+  import { Sun, ShoppingBag, Receipt, ChartColumn, Ellipsis, CircleCheck, CircleAlert, WifiOff, LoaderCircle } from '@lucide/svelte'
   import Hoje from './telas/Hoje.svelte'
   import Encomendas from './telas/Encomendas.svelte'
   import Contas from './telas/Contas.svelte'
@@ -110,6 +110,13 @@
   </div>
 {/if}
 
+{#if S.gravando && !S.aviso}
+  <div class="pointer-events-none fixed inset-x-0 top-[max(14px,env(safe-area-inset-top))] z-[80] flex justify-center px-4" role="status" transition:fly={{ y: -24, duration: 220 }}>
+    <div class="flex items-center gap-2 rounded-full border border-linha bg-sup py-2.5 pr-5 pl-3.5 text-[14px] font-medium shadow-xl">
+      <LoaderCircle size={18} class="animate-spin text-destaque" /> Salvando…
+    </div>
+  </div>
+{/if}
 {#if S.aviso}
   {#key S.aviso.id}
     <div class="pointer-events-none fixed inset-x-0 top-[max(14px,env(safe-area-inset-top))] z-[80] flex justify-center px-4" role="status" transition:fly={{ y: -24, duration: 220 }}>

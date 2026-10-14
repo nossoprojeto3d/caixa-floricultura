@@ -32,6 +32,7 @@
   const saudacao = (() => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite' })()
 
   let foto = $state(null) // { carregando } | { url }
+  let enviando = $state(false)
   async function verFoto() {
     foto = { carregando: true }
     try {
@@ -41,8 +42,10 @@
     } catch (e) { foto = null; tratarErro(e) }
   }
   async function reabrir() {
+    if (enviando) return
     if (!(await confirmar('Marcar este dia como não fechado? Os lançamentos continuam.', { ok: 'Reabrir' }))) return
-    try { await reabrirDia(S.dia); avisar('Dia reaberto') } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await reabrirDia(S.dia); avisar('Dia reaberto') } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   const fecharDia = () => (S.caderno = { data: S.dia })
 

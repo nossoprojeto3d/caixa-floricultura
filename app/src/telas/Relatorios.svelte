@@ -74,7 +74,7 @@
     <button class="flex h-10 items-center gap-1.5 rounded-full border border-linha bg-sup px-3.5 text-[14px] font-medium text-txt-2" onclick={() => (busca = {})}><Search size={16} /> Buscar</button>
     <div class="grid grid-cols-2 rounded-full border border-linha bg-sup p-1">
       {#each [['mes', 'Mês'], ['ano', 'Ano']] as [v, rt]}
-        <button class="h-9 rounded-full px-4 text-[13.5px] font-semibold {modo === v ? 'bg-txt text-fundo' : 'text-txt-2'}" onclick={() => (modo = v)}>{rt}</button>
+        <button class="h-10 rounded-full px-4 text-[13.5px] font-semibold {modo === v ? 'bg-txt text-fundo' : 'text-txt-2'}" onclick={() => (modo = v)}>{rt}</button>
       {/each}
     </div>
   </div>
@@ -128,7 +128,7 @@
   <section class="cartao mt-4 px-4 pt-4 pb-3 lg:px-6">
     <div class="mb-1 flex items-center justify-between">
       <h2 class="titulo text-[18px] font-semibold">Mês a mês</h2>
-      <button class="flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] text-txt-2 hover:bg-sup-2" onclick={() => (tabela = !tabela)}><Table2 size={15} />{tabela ? 'Gráfico' : 'Tabela'}</button>
+      <button class="flex h-10 items-center gap-1.5 rounded-full px-3 text-[13px] text-txt-2 hover:bg-sup-2" onclick={() => (tabela = !tabela)}><Table2 size={15} />{tabela ? 'Gráfico' : 'Tabela'}</button>
     </div>
     {#if tabela}
       <div class="-mx-4 overflow-x-auto px-4">

@@ -28,8 +28,10 @@
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function excluir() {
+    if (enviando) return
     if (!(await confirmar('Apagar esta encomenda? Os pagamentos já lançados no caixa continuam lá.', { ok: 'Apagar', perigo: true }))) return
-    try { await excluirEncomenda(f.id); avisar('Encomenda apagada'); fechar() } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await excluirEncomenda(f.id); avisar('Encomenda apagada'); fechar() } catch (e) { tratarErro(e) } finally { enviando = false }
   }
 </script>
 

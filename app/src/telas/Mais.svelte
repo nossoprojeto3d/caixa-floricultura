@@ -13,29 +13,42 @@
   let apagando = $state(null) // { cat, destino }
   let info = $state(null)
   let tipoCat = $state('entrada')
+  let enviando = $state(false)
 
   // o link da planilha vem do servidor (no modo demonstração não existe)
   async function abrirExportar() {
     painel = 'exportar'
     if (!demo && !info) try { info = await Api.info() } catch (e) { tratarErro(e) }
   }
-  async function salvarCat() {
+  async function salvarCat(e) {
+    e?.preventDefault()
+    if (enviando) return
     const nome = cat.nome.trim()
     if (!nome) return avisar('Dê um nome para a categoria.', 'erro')
     if (S.categorias.some(c => c.id !== cat.id && c.tipo === cat.tipo && c.nome.toLowerCase() === nome.toLowerCase())) return avisar('Já existe uma categoria com esse nome.', 'erro')
-    try { await salvarCategoria({ ...cat, nome }); avisar('Categoria salva'); cat = null } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await salvarCategoria({ ...cat, nome }); avisar('Categoria salva'); cat = null } catch (e) { tratarErro(e) } finally { enviando = false }
+  }
+  async function moverCat(id, passo) {
+    if (enviando) return
+    enviando = true
+    try { await moverCategoria(id, passo) } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function pedirExcluir(c) {
+    if (enviando) return
     const uso = usoCategoria(c.id)
     if (!uso) {
       if (!(await confirmar(`Apagar a categoria “${c.nome}”?`, { ok: 'Apagar', perigo: true }))) return
-      try { await excluirCategoria(c.id); avisar('Categoria apagada') } catch (e) { tratarErro(e) }
+      enviando = true
+      try { await excluirCategoria(c.id); avisar('Categoria apagada') } catch (e) { tratarErro(e) } finally { enviando = false }
       return
     }
     apagando = { cat: c, destino: categoriasDoTipo(c.tipo).find(x => x.id !== c.id)?.id || '', uso }
   }
   async function confirmarExcluir() {
-    try { await excluirCategoria(apagando.cat.id, apagando.destino); avisar('Categoria apagada'); apagando = null } catch (e) { tratarErro(e) }
+    if (enviando) return
+    enviando = true
+    try { await excluirCategoria(apagando.cat.id, apagando.destino); avisar('Categoria apagada'); apagando = null } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   function exportar(qual) {
     const ano = new Date().getFullYear()
@@ -121,13 +134,13 @@
     <Escolha opcoes={[['entrada', 'Entradas'], ['saida', 'Saídas']]} bind:valor={tipoCat} />
     <div class="mt-4 overflow-hidden rounded-[20px] border border-linha bg-sup">
       {#each categoriasDoTipo(tipoCat) as c, i (c.id)}
-        <div class="flex items-center gap-2 py-1.5 pr-1.5 pl-4 not-last:border-b not-last:border-linha/70">
+        <div class="flex items-center gap-1 py-1 pr-1 pl-4 not-last:border-b not-last:border-linha/70">
           <span class="size-3 shrink-0 rounded-full" style="background:{c.cor}"></span>
           <span class="flex-1 truncate text-[15px]">{c.nome}</span>
-          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === 0} aria-label="Subir" onclick={() => moverCategoria(c.id, -1).catch(tratarErro)}><ChevronUp size={17} /></button>
-          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === categoriasDoTipo(tipoCat).length - 1} aria-label="Descer" onclick={() => moverCategoria(c.id, 1).catch(tratarErro)}><ChevronDown size={17} /></button>
-          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sup-2" aria-label="Renomear" onclick={() => (cat = { ...$state.snapshot(c) })}><Pencil size={16} /></button>
-          <button class="grid size-9 place-items-center rounded-full text-txt-3 hover:bg-sai-fundo hover:text-sai" aria-label="Apagar" onclick={() => pedirExcluir(c)}><Trash2 size={16} /></button>
+          <button class="grid size-10 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === 0} aria-label="Subir" onclick={() => moverCat(c.id, -1)}><ChevronUp size={17} /></button>
+          <button class="grid size-10 place-items-center rounded-full text-txt-3 hover:bg-sup-2 disabled:opacity-20" disabled={i === categoriasDoTipo(tipoCat).length - 1} aria-label="Descer" onclick={() => moverCat(c.id, 1)}><ChevronDown size={17} /></button>
+          <button class="grid size-10 place-items-center rounded-full text-txt-3 hover:bg-sup-2" aria-label="Renomear" onclick={() => (cat = { ...$state.snapshot(c) })}><Pencil size={16} /></button>
+          <button class="grid size-10 place-items-center rounded-full text-txt-3 hover:bg-sai-fundo hover:text-sai" aria-label="Apagar" onclick={() => pedirExcluir(c)}><Trash2 size={16} /></button>
         </div>
       {/each}
     </div>
@@ -138,8 +151,10 @@
 
 {#if cat}
   <Folha titulo={cat.id ? 'Renomear categoria' : 'Nova categoria'} aoFechar={() => (cat = null)}>
-    <Campo rotulo="Nome"><input class="campo" bind:value={cat.nome} maxlength="40" /></Campo>
-    <button class="mt-5 h-12 w-full rounded-2xl bg-destaque text-[15px] font-semibold text-white" onclick={salvarCat}>Salvar</button>
+    <form onsubmit={salvarCat}>
+      <Campo rotulo="Nome"><input class="campo" bind:value={cat.nome} maxlength="40" enterkeyhint="done" /></Campo>
+      <button class="mt-5 h-12 w-full rounded-2xl bg-destaque text-[15px] font-semibold text-white disabled:opacity-60" disabled={enviando}>{enviando ? 'Salvando…' : 'Salvar'}</button>
+    </form>
   </Folha>
 {/if}
 
@@ -149,7 +164,7 @@
     <select class="campo mt-3 px-3" bind:value={apagando.destino}>
       {#each categoriasDoTipo(apagando.cat.tipo).filter(x => x.id !== apagando.cat.id) as c}<option value={c.id}>{c.nome}</option>{/each}
     </select>
-    <button class="mt-5 h-12 w-full rounded-2xl bg-sai text-[15px] font-semibold text-white disabled:opacity-50" disabled={!apagando.destino} onclick={confirmarExcluir}>Mover e apagar</button>
+    <button class="mt-5 h-12 w-full rounded-2xl bg-sai text-[15px] font-semibold text-white disabled:opacity-50" disabled={!apagando.destino || enviando} onclick={confirmarExcluir}>{enviando ? 'Apagando…' : 'Mover e apagar'}</button>
   </Folha>
 {/if}
 

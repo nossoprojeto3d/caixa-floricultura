@@ -4,7 +4,7 @@ import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
 import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from './formato.js'
 
-export const VERSAO = '1.1.1'
+export const VERSAO = '1.1.2'
 const CHAVE_CACHE = 'ternura_cache'
 let versaoDados = '' // muda no servidor a cada gravação
 
@@ -30,6 +30,7 @@ export const S = $state({
   confirmar: null,
   folhas: 0, // painéis abertos (a atualização automática espera fecharem)
   offline: false,
+  gravando: 0, // gravações em andamento (a planilha leva alguns segundos: mostra "Salvando…")
   carregadoEm: 0,
   flores: 0, // dispara a chuva de pétalas
 })
@@ -226,7 +227,9 @@ if (typeof document !== 'undefined') {
 /* ---------- Gravação: um lote de operações vai junto para a planilha ---------- */
 async function gravar(ops) {
   gravacoes++
-  const r = await Api.lote(ops)
+  S.gravando++
+  let r
+  try { r = await Api.lote(ops) } finally { S.gravando-- }
   gravacoes++ // e de novo no fim: busca que começou durante a gravação também é descartada
   const salvos = new Map((r?.salvos || []).map(x => [x.id, x]))
   for (const o of ops) {

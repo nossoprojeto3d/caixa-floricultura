@@ -214,7 +214,7 @@
 
       {#if ja.length}
         <details class="mb-3 rounded-2xl border border-linha bg-sup px-4 py-3">
-          <summary class="cursor-pointer text-[14px] font-medium text-txt-2">Já lançado neste dia ({ja.length})</summary>
+          <summary class="cursor-pointer py-2.5 text-[14px] font-medium text-txt-2">Já lançado neste dia ({ja.length})</summary>
           <ul class="mt-2 space-y-1 text-[13.5px] text-txt-2">
             {#each ja as l}<li class="flex justify-between gap-3"><span class="truncate">{l.descricao || nomeCat(l.categoria)}</span><span class="shrink-0 {l.tipo === 'saida' ? 'text-sai' : 'text-ent'}">{l.tipo === 'saida' ? '−' : '+'}{fmt(l.valor)}</span></li>{/each}
           </ul>

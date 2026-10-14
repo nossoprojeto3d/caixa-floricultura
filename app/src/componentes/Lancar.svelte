@@ -88,7 +88,7 @@
       <div class="transition-colors {f.centavos ? corTipo : 'text-txt-3'}">
         <Dinheiro valor={f.centavos / 100} class="text-[clamp(44px,12vw,58px)] leading-none font-semibold" />
       </div>
-      <button class="mt-3 flex h-9 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-medium {f.data !== hoje() ? 'bg-alerta-fundo text-alerta' : 'text-txt-2'}" onclick={() => (folhaData = true)}>
+      <button class="mt-3 flex h-10 items-center gap-1.5 rounded-full px-3 text-[13.5px] font-medium {f.data !== hoje() ? 'bg-alerta-fundo text-alerta' : 'text-txt-2'}" onclick={() => (folhaData = true)}>
         <CalendarDays size={15} />{dataBonita(f.data)}{#if fechamento(f.data) && f.data !== hoje()}<span class="opacity-70">· dia fechado</span>{/if}
       </button>
     </div>
@@ -104,7 +104,7 @@
       </div>
       <div class="-mx-5 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none]">
         {#each formas as p}
-          <button class="h-9 shrink-0 rounded-full px-3.5 text-[13.5px] font-medium transition-colors {f.forma === p ? 'bg-destaque-fundo text-destaque-forte' : 'text-txt-2 hover:bg-sup-2'}" onclick={() => (f.forma = f.forma === p ? '' : p)}>{p}</button>
+          <button class="h-10 shrink-0 rounded-full px-3.5 text-[13.5px] font-medium transition-colors {f.forma === p ? 'bg-destaque-fundo text-destaque-forte' : 'text-txt-2 hover:bg-sup-2'}" onclick={() => (f.forma = f.forma === p ? '' : p)}>{p}</button>
         {/each}
       </div>
       <input bind:value={f.descricao} maxlength="120" enterkeyhint="done" onkeydown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}

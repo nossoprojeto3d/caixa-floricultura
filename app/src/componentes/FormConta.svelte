@@ -25,8 +25,10 @@
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function excluir() {
+    if (enviando) return
     if (!(await confirmar('Apagar esta conta? Se já foi paga, o lançamento no caixa continua.', { ok: 'Apagar', perigo: true }))) return
-    try { await excluirConta(f.id); avisar('Conta apagada'); fechar() } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await excluirConta(f.id); avisar('Conta apagada'); fechar() } catch (e) { tratarErro(e) } finally { enviando = false }
   }
 </script>
 

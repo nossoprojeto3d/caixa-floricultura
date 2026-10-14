@@ -37,8 +37,10 @@
     } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function desfazer(c) {
+    if (enviando) return
     if (!(await confirmar('Desfazer o pagamento? A conta volta para “em aberto” e a saída sai do caixa.', { ok: 'Desfazer' }))) return
-    try { await desfazerPagamento(c); avisar('Pagamento desfeito') } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await desfazerPagamento(c); avisar('Pagamento desfeito') } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function copiar(t) {
     try { await navigator.clipboard.writeText(t); avisar('Código copiado') } catch { avisar('Não consegui copiar.', 'erro') }

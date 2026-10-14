@@ -15,21 +15,30 @@ function lerCodigo() { try { return localStorage.getItem(CHAVE_CODIGO) || '' } c
 export const codigoSalvo = lerCodigo
 
 async function chamar(acao, dados = {}, tempo = 30000) {
-  const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), tempo)
+  // falha de rede passageira (comum no celular ao voltar para o app): tenta mais uma vez.
+  // Repetir é seguro: o lote grava pelo id. A foto do caderno não repete, para não duplicar no Drive.
+  const tentativas = acao === 'lerCaderno' ? 1 : 2
   let res
-  try {
-    // text/plain evita a checagem prévia (CORS) que o Apps Script não responde
-    res = await fetch(URL_SERVIDOR, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ acao, codigo: lerCodigo(), ...dados }),
-      signal: ctrl.signal,
-      redirect: 'follow',
-    })
-  } catch (e) {
-    throw new ErroServidor(e.name === 'AbortError' ? 'O servidor demorou para responder.' : 'Sem conexão com a internet.', 'rede')
-  } finally { clearTimeout(t) }
+  for (let n = 1; ; n++) {
+    const ctrl = new AbortController()
+    const t = setTimeout(() => ctrl.abort(), tempo)
+    try {
+      // text/plain evita a checagem prévia (CORS) que o Apps Script não responde
+      res = await fetch(URL_SERVIDOR, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ acao, codigo: lerCodigo(), ...dados }),
+        signal: ctrl.signal,
+        redirect: 'follow',
+      })
+      break
+    } catch (e) {
+      if (e.name === 'AbortError') throw new ErroServidor('O servidor demorou para responder.', 'rede')
+      if (n < tentativas) { await new Promise(r => setTimeout(r, 1500)); continue }
+      // o detalhe ("Load failed", "Failed to fetch"…) ajuda a descobrir a causa pelo print
+      throw new ErroServidor(`Sem conexão com a internet (${e.message || e.name}).`, 'rede')
+    } finally { clearTimeout(t) }
+  }
   let r
   try { r = await res.json() } catch { throw new ErroServidor('Resposta estranha do servidor. Confira o endereço do Apps Script.') }
   if (!r.ok) throw new ErroServidor(r.erro || 'Erro no servidor.', r.tipo || 'servidor')

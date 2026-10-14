@@ -15,8 +15,10 @@
     catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function excluir() {
+    if (enviando) return
     if (!(await confirmar(`Apagar ${f.nome}? As contas dele continuam, só sem o fornecedor.`, { ok: 'Apagar', perigo: true }))) return
-    try { await excluirFornecedor(f.id); avisar('Fornecedor apagado'); fechar() } catch (e) { tratarErro(e) }
+    enviando = true
+    try { await excluirFornecedor(f.id); avisar('Fornecedor apagado'); fechar() } catch (e) { tratarErro(e) } finally { enviando = false }
   }
 </script>
 
