@@ -7,8 +7,18 @@
   import { S, tela } from '../lib/estado.svelte.js'
   let { titulo = '', aoFechar, children, largo = false } = $props()
 
+  let painel
   // enquanto houver painel aberto, a atualização automática espera
-  onMount(() => { S.folhas++; return () => { S.folhas-- } })
+  onMount(() => {
+    S.folhas++
+    const el = painel
+    return () => {
+      S.folhas--
+      // no iPhone, tocar no botão não tira o foco do campo: se o painel some com o teclado aberto,
+      // a tela de baixo fica deslocada e não responde ao toque. Fechar o teclado antes evita isso.
+      if (el?.contains(document.activeElement)) document.activeElement.blur()
+    }
+  })
   function tecla(e) { if (e.key === 'Escape') { e.stopImmediatePropagation(); aoFechar() } }
 </script>
 
@@ -17,6 +27,7 @@
 <div class="trava-rolagem fixed inset-0 z-50 flex items-end justify-center lg:items-center">
   <button class="absolute inset-0 bg-[#1d2a22]/40 backdrop-blur-[2px]" aria-label="Fechar" onclick={aoFechar} transition:fade={{ duration: 180 }}></button>
   <div
+    bind:this={painel}
     role="dialog"
     aria-modal="true"
     aria-label={titulo}
