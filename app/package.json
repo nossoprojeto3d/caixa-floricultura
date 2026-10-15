@@ -6,9 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "rm -rf ../assets && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "teste": "node --test testes/",
+    "teste:telas": "playwright test",
+    "teste:tudo": "node --test testes/ && playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.3.3",
     "svelte": "^5.57.2",

@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* os testes citam palavras como "table" que viram classe à toa no CSS */
+@source not '../testes';
 
 /* Identidade "Ternura": papel de folha clara, tinta verde-musgo e um só destaque verde-eucalipto.
    Entradas em verde-água, saídas em terracota (par validado para daltonismo). */

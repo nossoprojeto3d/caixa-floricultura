@@ -52,9 +52,11 @@ Tabelas (abas): `lancamentos`, `categorias`, `encomendas`, `contas`, `fornecedor
 Mudou o `Codigo.gs`? Ele não é publicado pelo GitHub: precisa colar no Apps Script e criar **Nova versão** da implantação (ver CONFIGURAR.md).
 
 ## Roteiro de teste
-Testes automáticos de lógica (dinheiro, datas, relatórios e o `Codigo.gs` rodando num Google simulado em `app/testes/google-falso.mjs`): `cd app && node --test testes/`. Rode sempre que mexer em `formato.js`, `analise.js` ou `Codigo.gs`.
+Testes automáticos de lógica (dinheiro, datas, relatórios e o `Codigo.gs` rodando num Google simulado em `app/testes/google-falso.mjs`): `cd app && npm run teste`. Rode sempre que mexer em `formato.js`, `analise.js` ou `Codigo.gs`.
 
-Usado pelo `/conferir-site`. **Teste sempre no modo demonstração** (`?demo` ou com `URL_SERVIDOR` vazio): os dados reais são da loja da mãe. Nunca grave nada no servidor real para testar.
+**Testes de tela (Playwright, `app/testes/e2e/`):** `cd app && npm run teste:telas` gera o build, sobe o preview na porta 5181 e cobre os itens 1 a 7 abaixo em iPhone (WebKit), Android e computador (1440×900), sempre no modo demonstração. Um aparelho só: `npx playwright test --project=iPhone`; um arquivo: `npx playwright test hoje`. O `comum.js` bloqueia qualquer chamada ao servidor real e reprova erro no console. `lento: true` simula a planilha real (gravação de 3 s) para testar "Salvando…" e o toque duplo. Tela de código de acesso: servidor simulado com `page.route`. `npm run teste:tudo` roda os dois. Eles não substituem o iPhone de verdade: data/hora e teclado só se confirmam no aparelho. O `app.css` tem `@source not '../testes'`: sem isso, palavras dos testes viram classe no CSS publicado.
+
+Usado pelo `/conferir-site` (rode `npm run teste:tudo` antes; o navegador fica para o que mudou e para o visual). **Teste sempre no modo demonstração** (`?demo` ou com `URL_SERVIDOR` vazio): os dados reais são da loja da mãe. Nunca grave nada no servidor real para testar.
 1. Abre sem erros no console nem violação de CSP; `manifest.json` e `sw.js` carregam.
 2. iPhone (390×844): nada vazando para os lados, barra inferior visível, formulários cabem na tela.
 3. Hoje: trocar de dia pelas setas; "Fechar o dia" abre as opções: "Fechar com os itens já lançados" (só aparece se o dia tiver lançamentos), tirar foto, galeria (escolher imagem → revisar → salvar) e digitar sem foto. Ao fechar: chuva de folhas e pétalas e "Dia fechado". Com vários dias sem fechar: o aviso abre a lista, e ao fechar um o app oferece o próximo; dia sem lançamento tem "A loja não abriu neste dia".
