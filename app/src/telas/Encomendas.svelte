@@ -49,7 +49,7 @@
   async function confirmarReceber() {
     if (enviando) return
     enviando = true
-    try { await receberEncomenda(det, receber.valor, receber.forma, receber.oque); avisar(`${receber.oque} lançado no caixa`); receber = null }
+    try { await receberEncomenda(det, receber); avisar(`${receber.oque} lançado no caixa`); receber = null }
     catch (err) { tratarErro(err) } finally { enviando = false }
   }
   const whats = e => `https://wa.me/${telefoneWhats(e.telefone)}`

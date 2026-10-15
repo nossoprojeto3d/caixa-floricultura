@@ -3,7 +3,7 @@
   import Folha from '../componentes/Folha.svelte'
   import Campo from '../componentes/Campo.svelte'
   import Escolha from '../componentes/Escolha.svelte'
-  import { S, demo, abrirFornecedor, salvarCategoria, excluirCategoria, moverCategoria, usoCategoria, categoriasDoTipo, contasAbertas, avisar, tratarErro, confirmar, sair, VERSAO } from '../lib/estado.svelte.js'
+  import { S, idDe, demo, abrirFornecedor, salvarCategoria, excluirCategoria, moverCategoria, usoCategoria, categoriasDoTipo, contasAbertas, avisar, tratarErro, confirmar, sair, VERSAO } from '../lib/estado.svelte.js'
   import { Api, registroConexao, apagarRegistroConexao } from '../lib/api.js'
   import { baixarCSV } from '../lib/exportar.js'
   import { telefoneWhats, fmt, dataCurta } from '../lib/formato.js'
@@ -30,7 +30,7 @@
     if (!nome) return avisar('Dê um nome para a categoria.', 'erro')
     if (S.categorias.some(c => c.id !== cat.id && c.tipo === cat.tipo && c.nome.toLowerCase() === nome.toLowerCase())) return avisar('Já existe uma categoria com esse nome.', 'erro')
     enviando = true
-    try { await salvarCategoria({ ...cat, nome }); avisar('Categoria salva'); cat = null } catch (e) { tratarErro(e) } finally { enviando = false }
+    try { await salvarCategoria({ ...cat, nome, id: idDe(cat) }); avisar('Categoria salva'); cat = null } catch (e) { tratarErro(e) } finally { enviando = false }
   }
   async function moverCat(id, passo) {
     if (enviando) return

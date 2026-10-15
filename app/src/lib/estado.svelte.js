@@ -4,7 +4,7 @@ import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
 import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from './formato.js'
 
-export const VERSAO = '1.1.7'
+export const VERSAO = '1.1.8'
 const CHAVE_CACHE = 'ternura_cache'
 let versaoDados = '' // muda no servidor a cada gravação
 
@@ -250,7 +250,7 @@ const limpo = reg => { const { cor, ...r } = $state.snapshot(reg); return r }
 // Id de um registro novo, fixo enquanto o formulário estiver aberto: se a gravação falhar depois de já ter
 // chegado à planilha, tentar de novo regrava o mesmo registro em vez de criar outro igual
 const idsNovos = new WeakMap()
-function idDe(f) {
+export function idDe(f) {
   if (f.id) return f.id
   if (!idsNovos.has(f)) idsNovos.set(f, novoId())
   return idsNovos.get(f)
@@ -279,7 +279,8 @@ export async function excluirLanc(id) {
 /* ---------- Fechamento do dia (caderno) ---------- */
 export async function fecharDia(data, itens, { foto = '', obs = '' } = {}) {
   const novos = itens.map(i => ({
-    id: novoId() + Math.random().toString(36).slice(2, 5), data, tipo: i.tipo, valor: Math.round(i.valor * 100) / 100,
+    // a chave da linha do caderno vira o id: salvar de novo depois de uma falha não duplica o dia
+    id: i.chave || novoId() + Math.random().toString(36).slice(2, 5), data, tipo: i.tipo, valor: Math.round(i.valor * 100) / 100,
     categoria: i.categoria, forma: i.forma || '', descricao: (i.descricao || '').trim(), origem: 'caderno', ref: '',
   }))
   const todos = [...lancsDoDia(data), ...novos]
@@ -305,8 +306,10 @@ export async function mudarStatusEncomenda(e, status) { await gravar([salvar('en
 export async function excluirEncomenda(id) { await gravar([excluir('encomendas', id)]) }
 
 // Lança no caixa o que a cliente pagou (sinal ou o restante)
-export async function receberEncomenda(e, valor, forma, oque) {
-  const lanc = { id: novoId(), data: hoje(), tipo: 'entrada', valor, categoria: categoriaPadrao('entrada', 'encomenda'), forma, descricao: `${oque} · ${e.cliente}`, origem: 'encomenda', ref: e.id }
+// (r = { valor, forma, oque }, o formulário aberto: o id fica fixo se precisar tentar de novo)
+export async function receberEncomenda(e, r) {
+  const { valor, forma, oque } = r
+  const lanc = { id: idDe(r), data: hoje(), tipo: 'entrada', valor, categoria: categoriaPadrao('entrada', 'encomenda'), forma, descricao: `${oque} · ${e.cliente}`, origem: 'encomenda', ref: e.id }
   await gravar([salvar('lancamentos', lanc)])
 }
 export const recebidoEncomenda = e => S.lancamentos.filter(l => l.ref === e.id && l.origem === 'encomenda').reduce((a, l) => a + cent(l.valor), 0) / 100
@@ -328,7 +331,7 @@ export async function pagarConta(c, { data = hoje(), forma = c.forma, lancar = t
   const ops = []
   let lancId = ''
   if (lancar) {
-    lancId = novoId()
+    lancId = 'pg-' + c.id // fixo por conta: pagar de novo depois de uma falha não duplica a saída
     const f = c.fornecedor ? fornecedor(c.fornecedor)?.nome : ''
     ops.push(salvar('lancamentos', {
       id: lancId, data, tipo: 'saida', valor: Number(c.valor), categoria: c.categoria || categoriaPadrao('saida', 'outra'),
@@ -339,7 +342,7 @@ export async function pagarConta(c, { data = hoje(), forma = c.forma, lancar = t
   if (c.repetir === 'mensal') {
     const venc = proximoMes(c.vencimento)
     const jaTem = S.contas.some(x => x.id !== c.id && x.descricao === c.descricao && x.vencimento === venc)
-    if (!jaTem) ops.push(salvar('contas', { ...limpo(c), id: novoId(), vencimento: venc, status: 'aberta', pago_em: '', lanc: '', criado: '' }))
+    if (!jaTem) ops.push(salvar('contas', { ...limpo(c), id: c.id.split('~')[0] + '~' + venc, vencimento: venc, status: 'aberta', pago_em: '', lanc: '', criado: '' }))
   }
   await gravar(ops)
 }
@@ -366,7 +369,7 @@ export async function excluirFornecedor(id) {
 /* ---------- Categorias ---------- */
 export async function salvarCategoria(c) {
   const ordem = c.ordem || Math.max(0, ...S.categorias.map(x => x.ordem || 0)) + 1
-  const reg = { ...limpo(c), id: c.id || novoId(), ordem }
+  const reg = { ...limpo(c), id: idDe(c), ordem }
   await gravar([salvar('categorias', reg)])
   return reg
 }
