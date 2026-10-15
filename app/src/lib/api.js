@@ -37,22 +37,30 @@ async function chamar(acao, dados = {}, tempo = 30000) {
   // falha de rede passageira (comum no iPhone ao voltar para o app): tenta de novo depois de 1 s e de 3 s.
   // Repetir é seguro: o lote grava pelo id. A foto do caderno não repete, para não duplicar no Drive.
   const esperas = acao === 'lerCaderno' ? [] : [1000, 3000]
-  let res
+  let r
   for (let n = 1; ; n++) {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), tempo)
     try {
       // text/plain evita a checagem prévia (CORS) que o Apps Script não responde
-      res = await fetch(URL_SERVIDOR, {
+      const res = await fetch(URL_SERVIDOR, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ acao, codigo: lerCodigo(), ...dados }),
         signal: ctrl.signal,
         redirect: 'follow',
       })
+      // o Google às vezes devolve uma página de erro (HTML) no lugar da resposta: trata como falha passageira
+      const texto = await res.text()
+      try { r = JSON.parse(texto) } catch {
+        anotar(acao, n, `resposta estranha (HTTP ${res.status}): ${texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}`)
+        if (n <= esperas.length) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
+        throw new ErroServidor('O Google respondeu com erro. Tente de novo: o que já tiver sido gravado não duplica.')
+      }
       if (n > 1) anotar(acao, n, `recuperou na tentativa ${n}`)
       break
     } catch (e) {
+      if (e instanceof ErroServidor) throw e
       if (e.name === 'AbortError') { anotar(acao, n, `demorou mais de ${tempo / 1000} s`); throw new ErroServidor('O servidor demorou para responder.', 'rede') }
       anotar(acao, n, `${e.name}: ${e.message}`)
       if (n <= esperas.length) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
@@ -60,8 +68,6 @@ async function chamar(acao, dados = {}, tempo = 30000) {
       throw new ErroServidor(`Sem conexão com a internet (${e.message || e.name}).`, 'rede')
     } finally { clearTimeout(t) }
   }
-  let r
-  try { r = await res.json() } catch { throw new ErroServidor('Resposta estranha do servidor. Confira o endereço do Apps Script.') }
   if (!r.ok) throw new ErroServidor(r.erro || 'Erro no servidor.', r.tipo || 'servidor')
   return r.dados
 }

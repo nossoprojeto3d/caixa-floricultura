@@ -4,7 +4,7 @@ import { Api, modoDemo, ErroServidor } from './api.js'
 import { corDaPosicao } from './dados.js'
 import { cent, hoje, novoId, somarMeses, somarDias, deISO, iso, diasAte } from './formato.js'
 
-export const VERSAO = '1.1.6'
+export const VERSAO = '1.1.7'
 const CHAVE_CACHE = 'ternura_cache'
 let versaoDados = '' // muda no servidor a cada gravação
 
@@ -247,6 +247,15 @@ const salvar = (tabela, registro) => ({ op: 'salvar', tabela, registro: $state.s
 const excluir = (tabela, id) => ({ op: 'excluir', tabela, id })
 const limpo = reg => { const { cor, ...r } = $state.snapshot(reg); return r }
 
+// Id de um registro novo, fixo enquanto o formulário estiver aberto: se a gravação falhar depois de já ter
+// chegado à planilha, tentar de novo regrava o mesmo registro em vez de criar outro igual
+const idsNovos = new WeakMap()
+function idDe(f) {
+  if (f.id) return f.id
+  if (!idsNovos.has(f)) idsNovos.set(f, novoId())
+  return idsNovos.get(f)
+}
+
 /* ---------- Lançamentos ---------- */
 export function abrirLanc(tipo = 'entrada', base = {}) {
   S.lanc = { id: '', data: S.tela === 'hoje' ? S.dia : hoje(), tipo, centavos: 0, categoria: '', forma: '', descricao: '', origem: 'manual', ref: '', ...base }
@@ -255,7 +264,7 @@ export function editarLanc(l) { S.lanc = { ...$state.snapshot(l), centavos: cent
 
 export async function salvarLanc(f) {
   const { centavos, ...resto } = $state.snapshot(f)
-  const reg = { ...resto, id: f.id || novoId(), valor: centavos / 100, descricao: f.descricao.trim() }
+  const reg = { ...resto, id: idDe(f), valor: centavos / 100, descricao: f.descricao.trim() }
   await gravar([salvar('lancamentos', reg)])
   return reg
 }
@@ -291,7 +300,7 @@ export async function reabrirDia(data) {
 export function abrirEncomenda(base = {}) {
   S.encomenda = { id: '', cliente: '', telefone: '', pedido: '', valor: '', sinal: '', entrega_data: hoje(), entrega_hora: '', modo: 'retirada', endereco: '', destinatario: '', cartao: '', status: 'aberta', obs: '', criado: '', ...base }
 }
-export async function salvarEncomenda(e) { await gravar([salvar('encomendas', { ...e, id: e.id || novoId() })]) }
+export async function salvarEncomenda(e) { await gravar([salvar('encomendas', { ...e, id: idDe(e) })]) }
 export async function mudarStatusEncomenda(e, status) { await gravar([salvar('encomendas', { ...limpo(e), status })]) }
 export async function excluirEncomenda(id) { await gravar([excluir('encomendas', id)]) }
 
@@ -311,7 +320,7 @@ function categoriaPadrao(tipo, pista) {
 export function abrirConta(base = {}) {
   S.conta = { id: '', descricao: '', fornecedor: '', valor: '', vencimento: hoje(), categoria: '', status: 'aberta', pago_em: '', forma: 'Boleto', repetir: 'nao', codigo: '', obs: '', lanc: '', criado: '', ...base }
 }
-export async function salvarConta(c) { await gravar([salvar('contas', { ...c, id: c.id || novoId() })]) }
+export async function salvarConta(c) { await gravar([salvar('contas', { ...c, id: idDe(c) })]) }
 export async function excluirConta(id) { await gravar([excluir('contas', id)]) }
 
 // Pagar: marca a conta como paga, lança a saída no caixa e, se repete, já cria a do mês que vem
@@ -348,7 +357,7 @@ function proximoMes(s) {
 
 /* ---------- Fornecedores ---------- */
 export function abrirFornecedor(base = {}) { S.fornecedor = { id: '', nome: '', telefone: '', produtos: '', pix: '', obs: '', criado: '', ...base } }
-export async function salvarFornecedor(f) { await gravar([salvar('fornecedores', { ...f, id: f.id || novoId() })]) }
+export async function salvarFornecedor(f) { await gravar([salvar('fornecedores', { ...f, id: idDe(f) })]) }
 export async function excluirFornecedor(id) {
   const ops = S.contas.filter(c => c.fornecedor === id).map(c => salvar('contas', { ...limpo(c), fornecedor: '' }))
   await gravar([...ops, excluir('fornecedores', id)])
