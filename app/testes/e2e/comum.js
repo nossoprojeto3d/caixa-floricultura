@@ -7,8 +7,10 @@ export { expect }
 export const test = base.extend({
   // lento: simula a planilha real (2–4 s por gravação) trocando a espera de 350 ms do demo por 3 s
   lento: [false, { option: true }],
+  // mensagens de console que o próprio teste provoca (ex.: rede derrubada de propósito)
+  errosEsperados: [null, { option: true }],
 
-  page: async ({ page, lento }, use) => {
+  page: async ({ page, lento, errosEsperados }, use) => {
     const erros = []
     page.on('pageerror', e => erros.push(String(e)))
     page.on('console', m => { if (m.type() === 'error') erros.push(m.text()) })
@@ -22,7 +24,7 @@ export const test = base.extend({
     }
     await use(page)
     expect(servidorReal, 'o teste tentou falar com o servidor real').toEqual([])
-    expect(erros, 'erros no console').toEqual([])
+    expect(erros.filter(e => !errosEsperados?.test(e)), 'erros no console').toEqual([])
   },
 
   // toque de verdade no celular, clique no computador

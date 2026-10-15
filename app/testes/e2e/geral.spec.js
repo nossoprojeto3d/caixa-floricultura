@@ -90,3 +90,29 @@ test.describe('código de acesso (servidor simulado, nada sai do computador)', (
     await expect(page.getByText(/Modo demonstração/)).toHaveCount(0)
   })
 })
+
+test.describe('rede do iPhone falhando ao voltar para o app (servidor simulado)', () => {
+  test.use({ errosEsperados: /Failed to load resource|ERR_FAILED|Load failed|Failed to fetch|access control/i })
+  test('tenta de novo sozinho, não acende "Sem conexão" e anota as falhas em Mais', async ({ page, tocar }) => {
+    const vazio = { lancamentos: [], categorias: [], encomendas: [], contas: [], fornecedores: [], fechamentos: [], resumos: [], versao: '1' }
+    let pedidos = 0
+    await page.route(/script\.google\.com/, r => {
+      pedidos++
+      if (pedidos <= 2) return r.abort('internetdisconnected')
+      return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, dados: vazio }) })
+    })
+    await page.addInitScript(() => localStorage.setItem('ternura_codigo', 'flor123'))
+    await page.goto('./')
+    await expect(page.getByRole('button', { name: 'Fechar o dia' })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText(/Sem conexão/)).toHaveCount(0)
+    expect(pedidos).toBe(3)
+
+    await tocar(menu(page, 'Mais'))
+    await tocar(page.getByRole('button', { name: 'Conexão · 3 anotações' }))
+    const painel = page.getByRole('dialog', { name: 'Conexão' })
+    await expect(painel.getByText('recuperou na tentativa 3')).toBeVisible()
+    await expect(painel.getByText(/carregar · tentativa 1/)).toBeVisible()
+    await tocar(painel.getByRole('button', { name: 'Apagar anotações' }))
+    await expect(page.getByRole('button', { name: /Conexão ·/ })).toHaveCount(0)
+  })
+})

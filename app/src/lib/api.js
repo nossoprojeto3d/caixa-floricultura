@@ -4,6 +4,7 @@ import { URL_SERVIDOR } from './config.js'
 import { Demo } from './demo.js'
 
 const CHAVE_CODIGO = 'ternura_codigo'
+const CHAVE_CONEXAO = 'ternura_conexao'
 
 export const modoDemo = !URL_SERVIDOR || (typeof location !== 'undefined' && new URLSearchParams(location.search).has('demo'))
 
@@ -14,10 +15,28 @@ export class ErroServidor extends Error {
 function lerCodigo() { try { return localStorage.getItem(CHAVE_CODIGO) || '' } catch { return '' } }
 export const codigoSalvo = lerCodigo
 
+// Registro das falhas de conexão, só neste aparelho (Mais › Conexão): mostra a mensagem do
+// celular e quanto tempo depois de voltar para o app ela aconteceu
+let voltouEm = Date.now()
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') voltouEm = Date.now() })
+function anotar(acao, tentativa, erro) {
+  try {
+    const lista = registroConexao()
+    lista.unshift({
+      quando: new Date().toISOString(), acao, tentativa, erro,
+      aposVoltar: Math.round((Date.now() - voltouEm) / 1000),
+      online: typeof navigator === 'undefined' ? null : navigator.onLine,
+    })
+    localStorage.setItem(CHAVE_CONEXAO, JSON.stringify(lista.slice(0, 40)))
+  } catch {}
+}
+export function registroConexao() { try { return JSON.parse(localStorage.getItem(CHAVE_CONEXAO) || '[]') } catch { return [] } }
+export function apagarRegistroConexao() { try { localStorage.removeItem(CHAVE_CONEXAO) } catch {} }
+
 async function chamar(acao, dados = {}, tempo = 30000) {
-  // falha de rede passageira (comum no celular ao voltar para o app): tenta mais uma vez.
+  // falha de rede passageira (comum no iPhone ao voltar para o app): tenta de novo depois de 1 s e de 3 s.
   // Repetir é seguro: o lote grava pelo id. A foto do caderno não repete, para não duplicar no Drive.
-  const tentativas = acao === 'lerCaderno' ? 1 : 2
+  const esperas = acao === 'lerCaderno' ? [] : [1000, 3000]
   let res
   for (let n = 1; ; n++) {
     const ctrl = new AbortController()
@@ -31,10 +50,12 @@ async function chamar(acao, dados = {}, tempo = 30000) {
         signal: ctrl.signal,
         redirect: 'follow',
       })
+      if (n > 1) anotar(acao, n, `recuperou na tentativa ${n}`)
       break
     } catch (e) {
-      if (e.name === 'AbortError') throw new ErroServidor('O servidor demorou para responder.', 'rede')
-      if (n < tentativas) { await new Promise(r => setTimeout(r, 1500)); continue }
+      if (e.name === 'AbortError') { anotar(acao, n, `demorou mais de ${tempo / 1000} s`); throw new ErroServidor('O servidor demorou para responder.', 'rede') }
+      anotar(acao, n, `${e.name}: ${e.message}`)
+      if (n <= esperas.length) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
       // o detalhe ("Load failed", "Failed to fetch"…) ajuda a descobrir a causa pelo print
       throw new ErroServidor(`Sem conexão com a internet (${e.message || e.name}).`, 'rede')
     } finally { clearTimeout(t) }

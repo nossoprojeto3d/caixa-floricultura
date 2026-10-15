@@ -4,11 +4,14 @@
   import Campo from '../componentes/Campo.svelte'
   import Escolha from '../componentes/Escolha.svelte'
   import { S, demo, abrirFornecedor, salvarCategoria, excluirCategoria, moverCategoria, usoCategoria, categoriasDoTipo, contasAbertas, avisar, tratarErro, confirmar, sair, VERSAO } from '../lib/estado.svelte.js'
-  import { Api } from '../lib/api.js'
+  import { Api, registroConexao, apagarRegistroConexao } from '../lib/api.js'
   import { baixarCSV } from '../lib/exportar.js'
-  import { telefoneWhats, fmt } from '../lib/formato.js'
+  import { telefoneWhats, fmt, dataCurta } from '../lib/formato.js'
 
-  let painel = $state(null) // 'fornecedores' | 'categorias' | 'exportar' | 'instalar'
+  let painel = $state(null) // 'fornecedores' | 'categorias' | 'exportar' | 'instalar' | 'conexao'
+  // falhas de conexão anotadas neste aparelho (para descobrir a causa pelo print)
+  let conexao = $state(registroConexao())
+  const hora = q => { const d = new Date(q); return `${dataCurta(q.slice(0, 10))} ${d.toLocaleTimeString('pt-BR')}` }
   let cat = $state(null) // categoria sendo editada { id, nome, tipo }
   let apagando = $state(null) // { cat, destino }
   let info = $state(null)
@@ -100,7 +103,26 @@
     <button class="flex h-11 items-center gap-2 rounded-full px-4 text-[14px] text-txt-3 hover:bg-sup-2" onclick={esquecer}><LogOut size={16} /> Sair deste aparelho</button>
   {/if}
   <p class="text-[12px] text-txt-3">Ternura Flores · Caixa · versão {VERSAO}</p>
+  {#if conexao.length}
+    <button class="h-10 rounded-full px-4 text-[12.5px] text-txt-3 underline underline-offset-2" onclick={() => { conexao = registroConexao(); painel = 'conexao' }}>Conexão · {conexao.length} anotaç{conexao.length === 1 ? 'ão' : 'ões'}</button>
+  {/if}
 </div>
+
+{#if painel === 'conexao'}
+  <Folha titulo="Conexão" aoFechar={() => (painel = null)} largo>
+    <p class="mb-3 text-[13.5px] leading-relaxed text-txt-2">Falhas de conexão com a planilha neste aparelho, da mais nova para a mais antiga. Tire um print e mande para quem cuida do app.</p>
+    <div class="cartao divide-y divide-linha/70 overflow-hidden">
+      {#each conexao as c}
+        <div class="px-4 py-2.5 text-[13px]">
+          <p class="flex justify-between gap-2"><span class="font-medium">{hora(c.quando)}</span><span class="text-txt-3">{c.acao} · tentativa {c.tentativa}</span></p>
+          <p class="break-words {c.erro.startsWith('recuperou') ? 'text-ent' : 'text-sai'}">{c.erro}</p>
+          <p class="text-[12px] text-txt-3">{c.aposVoltar} s depois de abrir/voltar ao app{c.online === false ? ' · celular dizia estar sem internet' : ''}</p>
+        </div>
+      {/each}
+    </div>
+    <button class="mt-4 h-11 w-full rounded-2xl text-[14px] font-medium text-txt-2 hover:bg-sup-2" onclick={() => { apagarRegistroConexao(); conexao = []; painel = null }}>Apagar anotações</button>
+  </Folha>
+{/if}
 
 {#if painel === 'fornecedores'}
   <Folha titulo="Fornecedores" aoFechar={() => (painel = null)} largo>
