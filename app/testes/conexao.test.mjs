@@ -51,9 +51,22 @@ test('gravação também tenta de novo (é segura: grava pelo id)', async () => 
   assert.deepEqual(chamadas[0], chamadas[1])
 })
 
-test('foto do caderno não repete (duplicaria no Drive)', async () => {
-  respostas = [falhaIOS(), { ok: true, dados: {} }]
+test('foto do caderno: rede falha ao sair do aparelho, tenta mais uma vez e anota o tamanho', async () => {
+  respostas = [falhaIOS(), { ok: true, dados: { itens: [] } }]
+  await Api.lerCaderno('A'.repeat(4096), '2026-10-15')
+  assert.equal(chamadas.length, 2)
+  assert.match(registroConexao()[1].erro, /Load failed.*foto de 3 KB/)
+})
+
+test('foto do caderno: só uma nova tentativa', async () => {
+  respostas = [falhaIOS(), falhaIOS(), { ok: true, dados: {} }]
   await assert.rejects(Api.lerCaderno('abc', '2026-10-15'), e => e.tipo === 'rede')
+  assert.equal(chamadas.length, 2)
+})
+
+test('foto do caderno: resposta estranha não repete (pode já ter salvo no Drive)', async () => {
+  respostas = ['<html>erro</html>', { ok: true, dados: {} }]
+  await assert.rejects(Api.lerCaderno('abc', '2026-10-15'), /Tente de novo/)
   assert.equal(chamadas.length, 1)
 })
 

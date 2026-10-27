@@ -35,8 +35,12 @@ export function apagarRegistroConexao() { try { localStorage.removeItem(CHAVE_CO
 
 async function chamar(acao, dados = {}, tempo = 30000) {
   // falha de rede passageira (comum no iPhone ao voltar para o app): tenta de novo depois de 1 s e de 3 s.
-  // Repetir é seguro: o lote grava pelo id. A foto do caderno não repete, para não duplicar no Drive.
-  const esperas = acao === 'lerCaderno' ? [] : [1000, 3000]
+  // Repetir é seguro: o lote grava pelo id. A foto do caderno repete só uma vez, e só quando nem saiu do
+  // aparelho (no iPhone, logo depois de voltar da câmera a rede às vezes ainda não acordou)
+  const foto = acao === 'lerCaderno'
+  const esperas = foto ? [2000] : [1000, 3000]
+  const extra = foto ? ` · foto de ${Math.round((dados.imagem || '').length * 0.75 / 1024)} KB` : ''
+  const inicio = Date.now()
   let r
   for (let n = 1; ; n++) {
     const ctrl = new AbortController()
@@ -53,16 +57,16 @@ async function chamar(acao, dados = {}, tempo = 30000) {
       // o Google às vezes devolve uma página de erro (HTML) no lugar da resposta: trata como falha passageira
       const texto = await res.text()
       try { r = JSON.parse(texto) } catch {
-        anotar(acao, n, `resposta estranha (HTTP ${res.status}): ${texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}`)
-        if (n <= esperas.length) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
+        anotar(acao, n, `resposta estranha (HTTP ${res.status})${extra}: ${texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)}`)
+        if (n <= esperas.length && !foto) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
         throw new ErroServidor('O Google respondeu com erro. Tente de novo: o que já tiver sido gravado não duplica.')
       }
-      if (n > 1) anotar(acao, n, `recuperou na tentativa ${n}`)
+      if (n > 1) anotar(acao, n, `recuperou na tentativa ${n}${extra}`)
       break
     } catch (e) {
       if (e instanceof ErroServidor) throw e
-      if (e.name === 'AbortError') { anotar(acao, n, `demorou mais de ${tempo / 1000} s`); throw new ErroServidor('O servidor demorou para responder.', 'rede') }
-      anotar(acao, n, `${e.name}: ${e.message}`)
+      if (e.name === 'AbortError') { anotar(acao, n, `demorou mais de ${tempo / 1000} s${extra}`); throw new ErroServidor('O servidor demorou para responder.', 'rede') }
+      anotar(acao, n, `${e.name}: ${e.message} (depois de ${Math.round((Date.now() - inicio) / 1000)} s)${extra}`)
       if (n <= esperas.length) { await new Promise(r => setTimeout(r, esperas[n - 1])); continue }
       // o detalhe ("Load failed", "Failed to fetch"…) ajuda a descobrir a causa pelo print
       throw new ErroServidor(`Sem conexão com a internet (${e.message || e.name}).`, 'rede')

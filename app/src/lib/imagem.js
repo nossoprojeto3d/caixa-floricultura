@@ -1,6 +1,7 @@
 // Reduz a foto do caderno antes de enviar: lado maior com até 2000 px, JPEG.
 // Letra de mão precisa de nitidez, então não comprime demais.
-export async function prepararFoto(arquivo, max = 2000, qualidade = 0.85) {
+// 1600 px ainda deixa a letra do caderno legível para a IA e sobe bem mais rápido que a foto inteira
+export async function prepararFoto(arquivo, max = 1600, qualidade = 0.8) {
   const url = URL.createObjectURL(arquivo)
   try {
     const img = await new Promise((ok, erro) => {
