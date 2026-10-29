@@ -52,7 +52,10 @@ function doGet() {
 
 function doPost(e) {
   let req;
-  try { req = JSON.parse(e.postData.contents); } catch (_) { return resposta({ ok: false, erro: 'Pedido inválido.' }); }
+  const inicio = Date.now();
+  try { req = JSON.parse(e.postData.contents); } catch (_) { console.warn('Pedido inválido'); return resposta({ ok: false, erro: 'Pedido inválido.' }); }
+  // anota cada pedido (aparece ao abrir a execução em Apps Script › Execuções)
+  console.log('Pedido: ' + req.acao + (req.imagem ? ' · foto de ' + Math.round(String(req.imagem).length * 0.75 / 1024) + ' KB' : ''));
   try {
     checarCodigo(req.codigo);
     let dados;
@@ -65,6 +68,7 @@ function doPost(e) {
       case 'versao': dados = props().getProperty('VERSAO_DADOS') || ''; break;
       default: throw Erro('Ação desconhecida.');
     }
+    console.log('Respondido em ' + ((Date.now() - inicio) / 1000).toFixed(1) + ' s');
     return resposta({ ok: true, dados: dados });
   } catch (err) {
     console.error(err && err.stack || err);
@@ -280,18 +284,35 @@ function lerCaderno(imagem, data) {
   };
   const corpo = {
     contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: 'image/jpeg', data: imagem } }] }],
-    generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0.1 },
+    // sem "pensar" antes de responder: os modelos mais novos pensam por padrão e passam de um minuto por foto
+    generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } },
   };
 
   const preferido = props().getProperty('GEMINI_MODEL') || 'gemini-flash-latest';
   const modelos = [preferido, 'gemini-3.8-flash', 'gemini-flash-lite-latest'].filter(function (x, i, a) { return a.indexOf(x) === i; });
   let ultimoErro = '';
+  const inicio = Date.now();
   for (let i = 0; i < modelos.length; i++) {
-    const r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelos[i] + ':generateContent', {
+    // o app espera até 150 s: depois de 70 s não vale começar outro modelo
+    if (i > 0 && Date.now() - inicio > 70000) { console.warn('Sem tempo para tentar ' + modelos[i]); break; }
+    const t0 = Date.now();
+    let r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelos[i] + ':generateContent', {
       method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': chave },
       payload: JSON.stringify(corpo), muteHttpExceptions: true,
     });
-    const status = r.getResponseCode();
+    let status = r.getResponseCode();
+    // modelo que não aceita desligar o "pensar": tenta o mesmo modelo sem essa opção
+    if (status === 400 && /thinking/i.test(r.getContentText())) {
+      console.warn(modelos[i] + ' não aceita sem pensar; tentando com');
+      const semOpcao = JSON.parse(JSON.stringify(corpo));
+      delete semOpcao.generationConfig.thinkingConfig;
+      r = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/models/' + modelos[i] + ':generateContent', {
+        method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': chave },
+        payload: JSON.stringify(semOpcao), muteHttpExceptions: true,
+      });
+      status = r.getResponseCode();
+    }
+    console.log('Gemini ' + modelos[i] + ': ' + status + ' em ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
     if (status !== 200) { ultimoErro = 'Gemini ' + status + ': ' + r.getContentText().slice(0, 200); console.warn(ultimoErro); continue; }
     try {
       const json = JSON.parse(r.getContentText());

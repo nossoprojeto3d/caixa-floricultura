@@ -210,3 +210,31 @@ test('o app não consegue gravar resumos (só o arquivamento grava)', () => {
   const r = s.post('lote', { ops: [{ op: 'salvar', tabela: 'resumos', registro: { id: 'x', mes: '2020-01', tipo: 'entrada', categoria: '', forma: '', valor: 1, qtd: 1, criado: '' } }] })
   assert.equal(r.ok, false)
 })
+
+test('foto do caderno: pede ao Gemini para não pensar e lê os itens', () => {
+  const s = carregarServidor({ props: { CODIGO_ACESSO: 'flor123', GEMINI_API_KEY: 'k' } })
+  s.configurar()
+  s.gemini.push([200, '{"itens":[{"tipo":"entrada","valor":12.5,"descricao":"rosa","forma":"Pix","categoria":"x","duvida":false}]}'])
+  const r = s.post('lerCaderno', { imagem: 'QUJD', data: '2026-10-29' })
+  assert.equal(r.ok, true)
+  assert.equal(r.dados.itens[0].valor, 12.5)
+  assert.deepEqual(s.chamadas.at(-1).corpo.generationConfig.thinkingConfig, { thinkingBudget: 0 })
+})
+
+test('foto do caderno: modelo que recusa "sem pensar" é chamado de novo com o padrão', () => {
+  const s = carregarServidor({ props: { CODIGO_ACESSO: 'flor123', GEMINI_API_KEY: 'k' } })
+  s.configurar()
+  s.gemini.push([400, '{"error":{"message":"Thinking budget is not supported"}}'], [200, '{"itens":[{"tipo":"saida","valor":30,"descricao":"","forma":"nenhuma","categoria":"","duvida":false}]}'])
+  const r = s.post('lerCaderno', { imagem: 'QUJD', data: '2026-10-29' })
+  assert.equal(r.dados.itens[0].tipo, 'saida')
+  assert.equal(s.chamadas.at(-1).corpo.generationConfig.thinkingConfig, undefined)
+})
+
+test('foto do caderno: Gemini fora do ar devolve aviso para digitar', () => {
+  const s = carregarServidor({ props: { CODIGO_ACESSO: 'flor123', GEMINI_API_KEY: 'k' } })
+  s.configurar()
+  s.gemini.push([429, 'cota'], [429, 'cota'], [429, 'cota'])
+  const r = s.post('lerCaderno', { imagem: 'QUJD', data: '2026-10-29' })
+  assert.equal(r.dados.itens.length, 0)
+  assert.match(r.dados.aviso, /Gemini 429/)
+})

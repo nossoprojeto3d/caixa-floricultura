@@ -52,6 +52,7 @@ export function carregarServidor({ props = {} } = {}) {
   const propriedades = { ...props }
   const cache = new Map()
   const chamadas = [] // chamadas a serviços de fora (Gemini)
+  const gemini = [] // respostas do Gemini na ordem: [status, texto]; vazio = lê sem itens
   const lixeira = []
   const novaPlanilha = (id) => {
     const abasP = new Map()
@@ -83,7 +84,8 @@ export function carregarServidor({ props = {} } = {}) {
       fetch: (url, op) => {
         const corpo = JSON.parse(op.payload || '{}')
         chamadas.push({ url, corpo })
-        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"itens":[]}' }] } }] }) }
+        const [status, texto] = gemini.shift() || [200, '{"itens":[]}']
+        return { getResponseCode: () => status, getContentText: () => (status === 200 ? JSON.stringify({ candidates: [{ content: { parts: [{ text: texto }] } }] }) : texto) }
       },
     },
     DriveApp: { getFileById: id => ({ setTrashed: v => v && lixeira.push(id) }), getFolderById: () => ({ getId: () => 'pasta', createFile: b => ({ getId: () => 'foto1' }) }), createFolder: () => ({ getId: () => 'pasta', createFile: () => ({ getId: () => 'foto1' }) }) },
@@ -96,5 +98,5 @@ export function carregarServidor({ props = {} } = {}) {
   // chama como o app chama: POST com JSON no corpo
   const post = (acao, dados = {}, codigoAcesso = propriedades.CODIGO_ACESSO) =>
     JSON.parse(s.doPost({ postData: { contents: JSON.stringify({ acao, codigo: codigoAcesso, ...dados }) } }).texto)
-  return { ...s, post, abas, propriedades, chamadas, cache, lixeira, temporarias }
+  return { ...s, post, abas, propriedades, chamadas, gemini, cache, lixeira, temporarias }
 }

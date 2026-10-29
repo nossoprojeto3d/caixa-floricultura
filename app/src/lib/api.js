@@ -87,7 +87,7 @@ const Remoto = {
   carregar: () => chamar('carregar'),
   // ops: [{ op: 'salvar', tabela, registro } | { op: 'excluir', tabela, id }], gravadas juntas
   lote: ops => chamar('lote', { ops }),
-  lerCaderno: (imagem, data) => chamar('lerCaderno', { imagem, data }, 90000),
+  lerCaderno: (imagem, data) => chamar('lerCaderno', { imagem, data }, 150000),
   foto: id => chamar('foto', { id }, 60000),
   info: () => chamar('info'),
   versao: () => chamar('versao', {}, 15000),
