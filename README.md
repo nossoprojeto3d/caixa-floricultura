@@ -2,8 +2,8 @@
 
 Caixa da floricultura Ternura Flores: fechamento do dia pela foto do caderno, encomendas, contas a pagar e relatórios mês a mês.
 
-- **App:** <https://nossoprojeto3d.github.io/caixa-floricultura/>
-- **Demonstração** (dados de exemplo, só no seu navegador): <https://nossoprojeto3d.github.io/caixa-floricultura/?demo>
+- **App:** <https://nossoprojeto3d.com.br/caixa-floricultura/>
+- **Demonstração** (dados de exemplo, só no seu navegador): <https://nossoprojeto3d.com.br/caixa-floricultura/?demo>
 - **Ligar o servidor (planilha e Gemini):** veja [CONFIGURAR.md](CONFIGURAR.md)
 
 ## Rodar no computador

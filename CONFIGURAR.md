@@ -68,7 +68,7 @@ cd app && npm install && npm run build
 cd .. && git add -A && git commit -m "Ligar o app ao servidor" && git push
 ```
 
-Em 1 ou 2 minutos o site atualiza em <https://nossoprojeto3d.github.io/caixa-floricultura/>. O modo demonstração continua disponível em `.../caixa-floricultura/?demo`.
+Em 1 ou 2 minutos o site atualiza em <https://nossoprojeto3d.com.br/caixa-floricultura/>. O modo demonstração continua disponível em `.../caixa-floricultura/?demo`.
 
 ## 7. Em cada celular (mãe e irmão)
 
